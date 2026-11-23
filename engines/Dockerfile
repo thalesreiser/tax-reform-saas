@@ -56,7 +56,9 @@ RUN useradd --system --uid 10001 --no-create-home --home-dir /nonexistent --shel
 # directory. Files stay owned by root, so the process can change neither the jar nor the database.
 WORKDIR /app
 COPY --from=build /engine.jar ./engine.jar
-COPY --from=database --chmod=0444 /src/calculadora/db/calculadora-pro.db ./calculadora/db/calculadora-pro.db
+# No --chmod here: BuildKit would apply it to the parent folders it creates too, and a 0444 folder
+# cannot be entered. The file keeps mode 0644 owned by root, which the engine user cannot write.
+COPY --from=database /src/calculadora/db/calculadora-pro.db ./calculadora/db/calculadora-pro.db
 
 # No curl in the image: bash's /dev/tcp probes the engine's own management endpoint.
 COPY --chmod=0755 <<'EOF' /usr/local/bin/engine-healthcheck
