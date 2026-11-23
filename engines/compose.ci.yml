@@ -1,0 +1,11 @@
+# CI only: publishes the engine ports on the runner's loopback so the smoke test can reach them.
+# A published port needs a non-internal network. Never use this file on a server.
+services:
+  regime-regular:
+    ports: ["127.0.0.1:8080:8080", "127.0.0.1:9101:9101"]
+  simples-nacional:
+    ports: ["127.0.0.1:8082:8082", "127.0.0.1:9103:9103"]
+
+networks:
+  engines:
+    internal: false

@@ -19,6 +19,9 @@ Swagger: `/api/swagger-ui.html` on each HTTP port.
 - `fixtures/<engine>/case.json`: the endpoint and the expected values (`jq` filter to value).
 - `scripts/smoke.sh`: starts a built jar, measures start-up time and memory, posts the example and
   checks the values.
+- `scripts/check-pins.sh`: fails if a pinned tag no longer points to its pinned commit.
+- `Dockerfile`, `compose.yml`, `compose.ci.yml`, `scripts/container-smoke.sh`: the container images
+  (below).
 
 ## How CI builds them
 
@@ -36,6 +39,40 @@ Swagger: `/api/swagger-ui.html` on each HTTP port.
    default JVM options and with two 512 MB container sizings (see ADR 004).
 5. Writes build time, start-up time and memory to the job summary and uploads the jar, the database
    and the logs as artifacts.
+
+## Container images
+
+`.github/workflows/engine-images.yml` builds one image per engine with `Dockerfile` (MOT-01.2):
+
+| Image                                              | Tag                           | HTTP   | Management (`/health`) | Version endpoint                        |
+| -------------------------------------------------- | ----------------------------- | ------ | ---------------------- | --------------------------------------- |
+| `ghcr.io/thalesreiser/trs-engine-regime-regular`   | `1.7.2`, `1.7.2-<our commit>` | `8080` | `9101`                 | `/api/calculadora/dados-abertos/versao` |
+| `ghcr.io/thalesreiser/trs-engine-simples-nacional` | `1.0.2`, `1.0.2-<our commit>` | `8082` | `9103`                 | `/api/versao`                           |
+
+- Build stage (Temurin JDK 25, pinned by digest): Flyway database from the regime-regular checkout
+  and `mvnw package -DskipTests` from the engine checkout, both passed as build contexts at the
+  pinned commit. Runtime stage (Temurin JRE 25, pinned by digest): non-root user `engine`
+  (uid 10001), the jar and the database owned by root and read-only, offline profile.
+- JVM options in `JDK_JAVA_OPTIONS`: `-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -Xss512k
+-XX:+ExitOnOutOfMemoryError`, so the heap follows the container limit. Override the variable to
+  change them (for example the C1-only flags of ADR 004).
+- The Docker health check calls the engine's own `/health` on the management port with bash only
+  (no curl in the image), with a 90 s start period.
+- The version endpoint returns `versaoApp` (the release tag) and `versaoDb` (the database version).
+
+Run both engines (CI and staging):
+
+```sh
+docker compose -f engines/compose.yml --env-file engines/versions.env up --detach --wait
+```
+
+`compose.yml` gives each engine a real limit of **768 MB without swap**, a read-only root file
+system with a 64 MB `/tmp` tmpfs, no capabilities, and the internal network `trs-engines`: no
+published ports (Swagger stays private) and no internet access. Our API joins that network and calls
+`http://regime-regular:8080` and `http://simples-nacional:8082`. CI adds `compose.ci.yml`, which
+publishes the ports on the runner's loopback only, then runs `scripts/container-smoke.sh` (version
+endpoint, official example, 200 more requests, memory peak under the limit) and a Trivy scan that
+fails on critical vulnerabilities. Pushes to `develop` and `main` publish the tested images.
 
 ## Bumping a tag
 
