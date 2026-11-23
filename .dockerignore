@@ -1,0 +1,18 @@
+# Allow-list: the image build only needs the workspace manifests, the lockfile and apps/api.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig.base.json
+!apps/*/package.json
+!packages/*/package.json
+!apps/api/
+
+**/node_modules
+**/dist
+**/.turbo
+**/coverage
+**/.env
+**/.env.*
+apps/api/tests
+apps/api/Dockerfile

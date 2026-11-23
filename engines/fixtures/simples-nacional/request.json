@@ -1,0 +1,21 @@
+{
+  "id": "op-2",
+  "versao": "3.0.0",
+  "data": "2027-03-15",
+  "tpDoc": "55",
+  "CRT": "1",
+  "aliquotasEfetivas": {
+    "fatorR": true,
+    "impedimentoSublimite": false,
+    "anexoI": { "pCBSSN": "1.1612", "pIBSSN": "0.0129" }
+  },
+  "itens": [
+    {
+      "numero": 1,
+      "cAtivSN": "01",
+      "cClassTrib": "000001",
+      "baseCalculo": "1000.00",
+      "valorImpostoSeletivo": "0.00"
+    }
+  ]
+}
