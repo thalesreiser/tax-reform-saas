@@ -21,3 +21,22 @@ Fastify 5 API: the internal routes used by the web app and the public `/v1` API 
 - **Configuration:** environment variables validated at start-up (`src/config.ts`, `.env.example`).
   An invalid value stops the process with the variable name, never its value.
 - **Tests:** `app.inject()` against `buildApp()`, no open port.
+
+## Container
+
+Multi-stage image (`Dockerfile`), built from the repository root:
+
+```sh
+docker build -f apps/api/Dockerfile -t trs-api .
+docker run --rm -p 3000:3000 -e APP_VERSION=local trs-api
+```
+
+- **Base:** `node:24-alpine`, pinned by digest (Dependabot proposes updates). The runtime stage keeps
+  only `dist/` and the production dependencies (`pnpm deploy --prod`); npm, Corepack and Yarn are
+  removed.
+- **User:** runs as the unprivileged `node` user (uid 1000); the application files are owned by root.
+- **Environment:** the variables in `.env.example`; the image sets `NODE_ENV=production`,
+  `HOST=0.0.0.0` and `PORT=3000`. `APP_VERSION` is set by the deploy pipeline.
+- **Health check:** `HEALTHCHECK` calls `GET /health` with Node's `fetch` (no curl in the image).
+- **CI:** `.github/workflows/image.yml` builds the image, checks the non-root user, smoke-tests
+  `/health` and scans it with Trivy, failing on any critical vulnerability.
