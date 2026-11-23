@@ -33,6 +33,8 @@ WORKDIR /app
 COPY --from=build /repo/apps/api/package.json ./package.json
 COPY --from=build /prod/api/node_modules ./node_modules
 COPY --from=build /repo/apps/api/dist ./dist
+# SQL migrations, applied by `node dist/db/migrate-cli.js` with the owner's DATABASE_MIGRATION_URL.
+COPY --from=build /repo/apps/api/drizzle ./drizzle
 
 # Unprivileged user shipped with the base image (uid 1000).
 USER node
