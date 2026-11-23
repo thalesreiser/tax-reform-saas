@@ -15,7 +15,6 @@ ends in an ADR.
 | Q-06 | Partner accountant: availability per week, how golden cases are delivered, compensation | Spreadsheet of cases per regime, one review session per week | MOT-02.7, MOT-03.3 |
 | Q-08 | API key per client company or per office | Per client company, created by the office | BE-03.1 |
 | DEC-01 | Hosting for the API and the JVM engines: VPS (Hetzner) or managed (Fly.io/Railway) | VPS with docker compose for cost; managed if ops time is a concern | EST-03.1 |
-| DEC-03 | Visual direction of the web app | Options presented at FE-01.2 | FE-01.2 |
 
 ## Answered
 
@@ -28,3 +27,4 @@ ends in an ADR.
 | — | Thales has a partner accountant to validate rules | 2026-11-23 | — |
 | Q-07 | The extension's first target is the Emissor Nacional da NFS-e; the form mapping and its risks become an ADR in EXT-01.1 | 2026-11-23 | — |
 | DEC-02 | Public repository with a proprietary licence | 2026-11-23 | [002](adr/002-public-repository.md) |
+| DEC-03 | Visual direction "G - Aurora" (lavender-to-mint gradient, glass cards, violet primary, Outfit), with AA contrast adjustments; dark mode proposal pending approval | 2026-11-23 | [006](adr/006-visual-direction-aurora.md) |

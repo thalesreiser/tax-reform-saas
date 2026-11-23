@@ -3,12 +3,13 @@ export default defineNuxtConfig({
   compatibilityDate: "2026-11-23",
   ssr: true,
   modules: ["@nuxt/ui", "@nuxtjs/i18n"],
-  css: ["~/assets/css/main.css"],
+  // Outfit is self-hosted from the package (no font host or CDN); see ADR 006.
+  css: ["@fontsource-variable/outfit", "~/assets/css/main.css"],
   devtools: { enabled: false },
   telemetry: false,
 
   ui: {
-    // No external font provider: the visual identity (FE-01.2) decides typography.
+    // No external font provider: Outfit is bundled from @fontsource-variable/outfit.
     fonts: false,
   },
 
@@ -27,10 +28,10 @@ export default defineNuxtConfig({
 
   typescript: {
     strict: true,
-    // Tooling files and end-to-end tests run in Node, outside the app context.
+    // Tooling files and tests run in Node, outside the app context.
     nodeTsConfig: {
       compilerOptions: { types: ["node"] },
-      include: ["../vitest.config.ts", "../test/e2e/**/*"],
+      include: ["../vitest.config.ts", "../test/**/*"],
     },
   },
 })

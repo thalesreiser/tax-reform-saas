@@ -31,6 +31,25 @@ describe("base layout (server-rendered)", () => {
     expect(html).toContain(`© ${new Date().getFullYear()} tax-reform-saas`)
   })
 
+  it("loads fonts, styles and scripts only from the app itself", async () => {
+    const html = await $fetch<string>("/")
+    const urls = [...html.matchAll(/<(?:link|script)\b[^>]*\b(?:href|src)="([^"]+)"/g)].map(
+      (m) => m[1] ?? "",
+    )
+    expect(urls.length).toBeGreaterThan(0)
+    for (const url of urls) expect(url).not.toMatch(/^(?:[a-z]+:)?\/\//i)
+
+    // Outfit is bundled: the stylesheets declare it and reference no external host.
+    const stylesheets = [...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g)]
+    const inline = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1] ?? "")
+    const linked = await Promise.all(stylesheets.map((m) => $fetch<string>(m[1] ?? "")))
+    const css = [...inline, ...linked].join("\n")
+    expect(css).toContain("Outfit Variable")
+    expect(css).not.toMatch(/url\(\s*["']?(?:https?:)?\/\//i)
+    expect(css).not.toMatch(/@import\s+(?:url\()?\s*["']?(?:https?:)?\/\//i)
+    expect(html).not.toMatch(/fonts\.(?:googleapis|gstatic|bunny)\.|use\.typekit\.net/)
+  })
+
   it("renders the error page inside the layout with a 404 status", async () => {
     // A browser navigation asks for HTML; without it Nuxt answers with the JSON error payload.
     const response = await fetch("/pagina-que-nao-existe", { headers: { accept: "text/html" } })

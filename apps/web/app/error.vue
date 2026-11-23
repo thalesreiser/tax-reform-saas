@@ -22,11 +22,17 @@ async function backHome() {
 <template>
   <UApp>
     <NuxtLayout>
-      <UContainer class="py-12 sm:py-16">
-        <p class="text-sm font-semibold text-primary">{{ props.error.status ?? 500 }}</p>
-        <h1 class="mt-2 text-3xl font-semibold text-highlighted sm:text-4xl">{{ title }}</h1>
-        <p class="mt-4 text-lg text-muted">{{ description }}</p>
-        <UButton class="mt-8" @click="backHome">{{ t("error.backHome") }}</UButton>
+      <UContainer class="py-12 sm:py-20">
+        <section class="surface-glass p-8 sm:p-12">
+          <p class="text-sm font-semibold text-primary tabular-nums">
+            {{ props.error.status ?? 500 }}
+          </p>
+          <h1 class="mt-2 text-3xl font-semibold tracking-tight text-highlighted sm:text-4xl">
+            {{ title }}
+          </h1>
+          <p class="mt-4 text-lg text-muted">{{ description }}</p>
+          <UButton class="mt-8" size="lg" @click="backHome">{{ t("error.backHome") }}</UButton>
+        </section>
       </UContainer>
     </NuxtLayout>
   </UApp>
