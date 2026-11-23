@@ -111,7 +111,7 @@ These run in CI. Locally, only `pnpm install --lockfile-only` is needed to updat
 
 ## What never goes into this repository
 
-The repository is private, but treat it as if it were public.
+The repository is public ([ADR 002](docs/adr/002-public-repository.md)).
 
 - Secrets of any kind: API keys, tokens, passwords, certificates, `.env` files (only `.env.example`).
 - **Real fiscal data:** CNPJs, invoices, revenue, client names or addresses from offices or their
