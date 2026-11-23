@@ -1,0 +1,264 @@
+name: Engine images
+
+# Builds one container image per official engine from the tags pinned in engines/versions.env, runs
+# both with real memory limits (engines/compose.yml), repeats the smoke test against the containers,
+# scans them and, on pushes to develop and main, publishes the tested images to GHCR (MOT-01.2,
+# ADR 004). The engines are never modified: the upstream repositories are built as they are.
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths: &engine-image-paths
+      - engines/**
+      - .github/workflows/engine-images.yml
+  push:
+    branches: [develop, main]
+    paths: *engine-image-paths
+  workflow_dispatch:
+
+concurrency:
+  group: engine-images-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io/thalesreiser
+  PUBLISH: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') }}
+
+jobs:
+  test:
+    name: Build, run under memory limits and scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      COMPOSE: docker compose -f engines/compose.yml -f engines/compose.ci.yml --env-file engines/versions.env
+      RESULTS_FILE: ${{ github.workspace }}/results.md
+      DB_VERSIONS_FILE: ${{ github.workspace }}/db-versions.txt
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read pinned versions
+        id: pins
+        run: grep -E '^[A-Z_]+=' engines/versions.env >> "$GITHUB_OUTPUT"
+
+      - name: Check that the pinned tags still point to the pinned commits
+        run: engines/scripts/check-pins.sh
+
+      - name: Check out calculadora-rtc-regime-regular ${{ steps.pins.outputs.REGIME_REGULAR_TAG }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.pins.outputs.REGIME_REGULAR_REPO }}
+          ref: ${{ steps.pins.outputs.REGIME_REGULAR_SHA }}
+          path: upstream/regime-regular
+          persist-credentials: false
+
+      - name: Check out calculadora-rtc-simples-nacional ${{ steps.pins.outputs.SIMPLES_NACIONAL_TAG }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.pins.outputs.SIMPLES_NACIONAL_REPO }}
+          ref: ${{ steps.pins.outputs.SIMPLES_NACIONAL_SHA }}
+          path: upstream/simples-nacional
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # Tagged with the final GHCR names, so compose.yml runs exactly these local images.
+      - name: Build the regime-regular image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: upstream/regime-regular
+          file: engines/Dockerfile
+          build-contexts: regime-regular=upstream/regime-regular
+          build-args: |
+            JAR=api-regime-geral.jar
+            HTTP_PORT=8080
+            MGMT_PORT=9101
+            ENGINE_TAG=${{ steps.pins.outputs.REGIME_REGULAR_TAG }}
+            ENGINE_COMMIT=${{ steps.pins.outputs.REGIME_REGULAR_SHA }}
+            DATABASE_TAG=${{ steps.pins.outputs.REGIME_REGULAR_TAG }}
+          tags: ${{ env.REGISTRY }}/trs-engine-regime-regular:${{ steps.pins.outputs.REGIME_REGULAR_TAG }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=engine-regime-regular
+          cache-to: type=gha,scope=engine-regime-regular,mode=max
+
+      - name: Build the simples-nacional image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: upstream/simples-nacional
+          file: engines/Dockerfile
+          build-contexts: regime-regular=upstream/regime-regular
+          build-args: |
+            JAR=api-simples-nacional.jar
+            HTTP_PORT=8082
+            MGMT_PORT=9103
+            ENGINE_TAG=${{ steps.pins.outputs.SIMPLES_NACIONAL_TAG }}
+            ENGINE_COMMIT=${{ steps.pins.outputs.SIMPLES_NACIONAL_SHA }}
+            DATABASE_TAG=${{ steps.pins.outputs.REGIME_REGULAR_TAG }}
+          tags: ${{ env.REGISTRY }}/trs-engine-simples-nacional:${{ steps.pins.outputs.SIMPLES_NACIONAL_TAG }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=engine-simples-nacional
+          cache-to: type=gha,scope=engine-simples-nacional,mode=max
+
+      - name: Start both engines with their memory limits
+        run: |
+          SECONDS=0
+          $COMPOSE up --detach --wait --wait-timeout 300
+          {
+            echo "## Engine images under real memory limits"
+            echo
+            echo "Runner: $(nproc) vCPU, $(free -m | awk '/^Mem:/ { print $2 }') MB RAM. Both engines healthy (Docker health check) after ${SECONDS}s."
+            echo
+            docker image ls --filter "reference=$REGISTRY/trs-engine-*" --format '- `{{.Repository}}:{{.Tag}}`: {{.Size}}'
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check user, read-only database and limits
+        run: |
+          for c in $($COMPOSE ps --quiet); do
+            name=$(docker inspect -f '{{.Name}}' "$c")
+            uid=$(docker exec "$c" id -u)
+            limit=$(docker inspect -f '{{.HostConfig.Memory}}' "$c")
+            echo "$name uid=$uid memory=$limit"
+            test "$uid" != "0"
+            test "$limit" = "805306368"
+            if docker exec "$c" test -w /app/calculadora/db/calculadora-pro.db; then
+              echo "::error::$name: the database is writable"
+              exit 1
+            fi
+          done
+
+      - name: Smoke test the containers
+        run: |
+          {
+            echo "| Engine | versaoApp | versaoDb | Spring start (s) | Example | Requests | Memory after load (MB) | cgroup peak (MB) | JVM peak RSS (MB) | Limit (MB) |"
+            echo "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+          } > "$RESULTS_FILE"
+          status=0
+          engines/scripts/container-smoke.sh "$($COMPOSE ps --quiet regime-regular)" http://127.0.0.1:8080 \
+            /api/calculadora/dados-abertos/versao "${{ steps.pins.outputs.REGIME_REGULAR_TAG }}" \
+            engines/fixtures/regime-regular regime-regular || status=1
+          engines/scripts/container-smoke.sh "$($COMPOSE ps --quiet simples-nacional)" http://127.0.0.1:8082 \
+            /api/versao "${{ steps.pins.outputs.SIMPLES_NACIONAL_TAG }}" \
+            engines/fixtures/simples-nacional simples-nacional || status=1
+          # Both engines must report the same database: it is one file built from the regime-regular tag.
+          if [[ $(cut -d= -f2 "$DB_VERSIONS_FILE" | sort -u | wc -l) != 1 ]]; then
+            echo "::error::the engines report different database versions: $(tr '\n' ' ' < "$DB_VERSIONS_FILE")"
+            status=1
+          fi
+          exit "$status"
+
+      - name: Write the results to the job summary
+        if: always()
+        run: |
+          if [[ -f "$RESULTS_FILE" ]]; then
+            tee -a "$GITHUB_STEP_SUMMARY" < "$RESULTS_FILE"
+            echo >> "$GITHUB_STEP_SUMMARY"
+          fi
+          docker stats --no-stream --format '- {{.Name}}: {{.MemUsage}} ({{.MemPerc}})' | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Engine logs
+        if: always()
+        run: $COMPOSE logs --no-color || true
+
+      - name: Stop the engines
+        if: always()
+        run: $COMPOSE down --volumes || true
+
+      - name: Report high and critical vulnerabilities (regime-regular)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/trs-engine-regime-regular:${{ steps.pins.outputs.REGIME_REGULAR_TAG }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          format: table
+          exit-code: "0"
+
+      - name: Report high and critical vulnerabilities (simples-nacional)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/trs-engine-simples-nacional:${{ steps.pins.outputs.SIMPLES_NACIONAL_TAG }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          format: table
+          exit-code: "0"
+          skip-setup-trivy: true
+
+      - name: Fail on critical vulnerabilities (regime-regular)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/trs-engine-regime-regular:${{ steps.pins.outputs.REGIME_REGULAR_TAG }}
+          scanners: vuln
+          severity: CRITICAL
+          format: table
+          exit-code: "1"
+          skip-setup-trivy: true
+
+      - name: Fail on critical vulnerabilities (simples-nacional)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/trs-engine-simples-nacional:${{ steps.pins.outputs.SIMPLES_NACIONAL_TAG }}
+          scanners: vuln
+          severity: CRITICAL
+          format: table
+          exit-code: "1"
+          skip-setup-trivy: true
+
+      # The publish job pushes these exact images, not a rebuild.
+      - name: Save the tested images
+        if: env.PUBLISH == 'true'
+        run: |
+          docker save \
+            "$REGISTRY/trs-engine-regime-regular:${{ steps.pins.outputs.REGIME_REGULAR_TAG }}" \
+            "$REGISTRY/trs-engine-simples-nacional:${{ steps.pins.outputs.SIMPLES_NACIONAL_TAG }}" \
+            -o engine-images.tar
+
+      - name: Upload the tested images
+        if: env.PUBLISH == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: engine-images
+          path: engine-images.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish to GHCR
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download the tested images
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: engine-images
+
+      - name: Push <engine tag> and <engine tag>-<commit>
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          source engines/versions.env
+          docker load -i engine-images.tar
+          echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          for pair in "regime-regular:$REGIME_REGULAR_TAG" "simples-nacional:$SIMPLES_NACIONAL_TAG"; do
+            image="$REGISTRY/trs-engine-${pair%%:*}"
+            tag="${pair#*:}"
+            docker tag "$image:$tag" "$image:$tag-${GITHUB_SHA::7}"
+            docker push "$image:$tag"
+            docker push "$image:$tag-${GITHUB_SHA::7}"
+            echo "- \`$image:$tag\` and \`$image:$tag-${GITHUB_SHA::7}\`" >> "$GITHUB_STEP_SUMMARY"
+          done
+          docker logout ghcr.io

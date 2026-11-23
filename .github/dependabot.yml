@@ -46,3 +46,19 @@ updates:
       # The image follows the Node 24 runtime (.nvmrc, engines).
       - dependency-name: node
         update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: docker
+    directory: /engines
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      # The engines are built for Java 25 (upstream pom.xml).
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]
