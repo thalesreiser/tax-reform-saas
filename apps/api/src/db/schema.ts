@@ -1,4 +1,7 @@
 import { char, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core"
+import { authOrganizations } from "./auth-schema.js"
+
+export * from "./auth-schema.js"
 
 /*
  * Tenancy model (RNF-02): `offices` is the tenant root and every tenant-scoped table carries an
@@ -8,9 +11,14 @@ import { char, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-cor
  * integration suite fails if a table with `office_id` is missing it.
  */
 
-/** Accounting office: the tenant. BE-01.3 maps it to a better-auth organization. */
+/**
+ * Accounting office: the tenant. Its id is the id of a better-auth organization; the row is created
+ * and renamed by a trigger on `auth_organizations` in the same transaction (0003_auth_rls.sql).
+ */
 export const offices = pgTable("offices", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id")
+    .primaryKey()
+    .references(() => authOrganizations.id),
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })

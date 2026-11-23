@@ -48,8 +48,11 @@ jobs:
           cache-from: type=gha,scope=api-image
           cache-to: type=gha,scope=api-image,mode=max
 
+      # The database is never reached by /health (the pool connects on the first query), so an
+      # unreachable URL is enough; the auth secret is random per run.
       - name: Run the container
-        run: docker run --detach --name api --publish 3000:3000 --env APP_VERSION=ci "$IMAGE"
+        run: |
+          docker run --detach --name api --publish 3000:3000 --env APP_VERSION=ci             --env DATABASE_URL=postgres://nobody@127.0.0.1:1/none             --env BETTER_AUTH_SECRET="$(openssl rand -hex 32)"             --env BETTER_AUTH_URL=http://127.0.0.1:3000             "$IMAGE"
 
       - name: Check that it runs as a non-root user
         run: |

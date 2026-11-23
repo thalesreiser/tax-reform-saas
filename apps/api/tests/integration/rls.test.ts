@@ -184,7 +184,18 @@ describe("application role", () => {
 
 // Guard for future migrations: a new table must get FORCE ROW LEVEL SECURITY and a policy (see
 // README "Database"), or be listed here, deliberately, as not tenant-scoped.
-const NON_TENANT_TABLES: string[] = []
+const NON_TENANT_TABLES: string[] = [
+  // better-auth (0002_auth.sql, grants in 0003_auth_rls.sql). Not tenant data: identities and
+  // memberships span offices, and better-auth always filters them by user, session token or
+  // organization. No route reads them except through better-auth and the session bridge.
+  "auth_users", // a user can belong to several offices
+  "auth_sessions", // looked up by the token in the signed session cookie
+  "auth_accounts", // password hashes, read only by better-auth for the signed-in e-mail
+  "auth_verifications", // short-lived e-mail verification tokens
+  "auth_organizations", // the office registry; office data itself lives in RLS tables
+  "auth_members", // user <-> office links; the bridge reads them to authorise a request
+  "auth_invitations", // looked up by their random id (the link secret), checked against the e-mail
+]
 
 describe("every table in the public schema", () => {
   it("forces row-level security with a policy", async () => {

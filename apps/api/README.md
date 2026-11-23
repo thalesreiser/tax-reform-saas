@@ -6,6 +6,8 @@ Fastify 5 API: the internal routes used by the web app and the public `/v1` API 
 | --------------- | ----------------------------------------------------------------- |
 | `/health`       | Liveness probe with the deployed version                          |
 | `/openapi.json` | OpenAPI 3.1 document generated from the Zod schemas of each route |
+| `/api/auth/*`   | better-auth: sign-up, sign-in, sessions, offices, invitations     |
+| `/office`       | Active office of the session and the user's role in it            |
 
 ## Conventions
 
@@ -54,7 +56,9 @@ Postgres (Neon in production) through Drizzle ORM on `pg`. Schema: `src/db/schem
 
 ### Tenancy and row-level security (RNF-02)
 
-- **Tenant:** `offices`. Every tenant-scoped table has an `office_id` referencing it.
+- **Tenant:** `offices`. Every tenant-scoped table has an `office_id` referencing it. An office is
+  created (and renamed) only by the trigger on better-auth's `auth_organizations`, with the same
+  id, in the same transaction (see Auth).
 - **Two roles.** The migrations run as the owner (`DATABASE_MIGRATION_URL`). The API connects with
   `DATABASE_URL` as a login user that is a member of `trs_app`, a role created by the migrations
   that is never superuser, never `BYPASSRLS` and owns no table. Each environment creates its login
@@ -82,3 +86,64 @@ offices.id)`.
 3. Add isolation cases to `tests/integration/`. The suite fails while any table in `public` lacks a
    forced policy; a table that is deliberately not tenant-scoped (e.g. better-auth's users) goes in
    `NON_TENANT_TABLES` there, with a reason.
+
+## Auth
+
+[better-auth](https://www.better-auth.com) (`src/auth`) on the same Postgres through its Drizzle
+adapter (`src/db/auth-schema.ts`, tables `auth_*`), mounted at `/api/auth/*`. Fastify requests are
+rebuilt as Web `Request`s on `BETTER_AUTH_URL` (never on the client's `Host`), and its errors are
+turned into problem details with better-auth's `code`.
+
+### Flows (RF-01)
+
+1. **Sign-up** `POST /api/auth/sign-up/email` `{ name, email, password }`: e-mail lower-cased,
+   password 10 to 128 characters (scrypt). A verification e-mail is sent; sign-in answers 403 until
+   the link is followed. Sign-up answers the same for a new and an existing e-mail and never signs
+   in, so it does not reveal accounts; sign-in has one error for "unknown e-mail" and "wrong
+   password".
+2. **Office** `POST /api/auth/organization/create` `{ name, slug }`: a better-auth organization is
+   an office. The creator becomes `owner`; a trigger creates the `offices` row with the same id.
+3. **Invitation** `POST /api/auth/organization/invite-member` `{ email, role, organizationId }`,
+   owner only, role `owner` or `accountant`. The e-mail links to `WEB_URL/convites/<id>`; the id
+   (a random UUID) is the secret. It expires after 48 hours, is single-use and only the invited,
+   verified e-mail can accept it (`POST /api/auth/organization/accept-invitation`
+   `{ invitationId }`), joining the office with the invited role.
+4. **Active office**: a session starts in the user's oldest office; `organization/set-active`
+   switches to another office the user belongs to.
+
+### Roles
+
+| Role         | Can                                                            |
+| ------------ | -------------------------------------------------------------- |
+| `owner`      | Everything, plus rename the office, invite, remove and re-role |
+| `accountant` | Work on the office's data; manages no member or invitation     |
+
+better-auth's default `admin` and `member` roles are rejected by hooks. Offices are never deleted
+through the API.
+
+### Tenant bridge
+
+Routes on office data use the `app.requireOffice` preHandler and then
+`withOffice(db, currentOffice(request).id, fn)`. It answers 401 (problem details) without a
+session and 403 when the session has no active office or the user is no longer a member of it (the
+membership is re-read on every request). Row-level security does the rest.
+
+### Cookies, limits and e-mail
+
+- **Session cookie** `trs.session_token` (`__Secure-` prefix in production): signed, `HttpOnly`,
+  `SameSite=Lax`, `Secure` in production; better-auth defaults of 7 days, refreshed daily. Requests
+  with cookies must come from `BETTER_AUTH_URL` or `WEB_URL` (origin check).
+- **Rate limits** (`@fastify/rate-limit`, in memory per process): 120 requests per minute per IP on
+  `/api/auth/*`; sign-in, sign-up and verification e-mails 30 per IP and 5 per e-mail in 15 minutes,
+  then 429 with `Retry-After`. better-auth's own limiter is off (it keys on IP headers only).
+- **E-mail** goes through the `Mailer` interface. Only `LogMailer` exists: outside production it logs
+  the whole message (follow links from the log); in production it logs only the subject, never the
+  link or the address. No real provider yet: production cannot send e-mails.
+
+### Pending
+
+- E-mail provider (blocks production sign-up and invitations).
+- Session lifetime, 2FA, social login, roles beyond owner and accountant.
+- Shared rate-limit store (database or Redis) with more than one API instance, and `trustProxy`
+  once the host is known, so limits see the client IP.
+- Web routes for e-mail links (`/convites/<id>`, verification callback): FE-01.3.

@@ -1,8 +1,8 @@
 import { randomBytes, randomUUID } from "node:crypto"
 import pg from "pg"
-import { type Db, createDb, withOffice } from "../../src/db/client.js"
+import { type Db, authDatabase, createDb, withOffice } from "../../src/db/client.js"
 import { runMigrations } from "../../src/db/migrate.js"
-import { clients, offices } from "../../src/db/schema.js"
+import { authOrganizations, clients } from "../../src/db/schema.js"
 
 /** Login user of the suite, a member of `trs_app`, like the API's user in each environment. */
 export const APP_LOGIN_ROLE = "trs_app_it"
@@ -12,6 +12,8 @@ export interface TestDatabase {
   admin: pg.Pool
   /** The API's view of the database: `trs_app` membership, row-level security applies. */
   app: Db
+  /** Connection string of that login user, for buildApp() in the auth suite. */
+  appUrl: string
   /** Raw connection as the application role, for queries that deliberately skip withOffice(). */
   connectAsApp(): Promise<pg.Client>
   close(): Promise<void>
@@ -50,6 +52,7 @@ export async function setupTestDatabase(): Promise<TestDatabase> {
   return {
     admin,
     app,
+    appUrl: appUrl.toString(),
     async connectAsApp() {
       const client = new pg.Client({ connectionString: appUrl.toString() })
       await client.connect()
@@ -62,13 +65,17 @@ export async function setupTestDatabase(): Promise<TestDatabase> {
   }
 }
 
-/** Creates an office through the API path: its own id is the office of the transaction. */
+/**
+ * Creates an office the way better-auth does: an organization row, as the application role; the
+ * trigger of 0003_auth_rls.sql creates the office with the same id.
+ */
 export async function createOffice(db: Db, name: string): Promise<string> {
-  const id = randomUUID()
-  await withOffice(db, id, async (tx) => {
-    await tx.insert(offices).values({ id, name })
-  })
-  return id
+  const [row] = await authDatabase(db)
+    .insert(authOrganizations)
+    .values({ name, slug: `office-${randomUUID()}` })
+    .returning({ id: authOrganizations.id })
+  if (row === undefined) throw new Error("Office was not created.")
+  return row.id
 }
 
 export async function createClient(
