@@ -9,6 +9,7 @@ on:
       - apps/api/**
       - packages/*/package.json
       - .dockerignore
+      - .pnpmfile.cjs
       - package.json
       - pnpm-lock.yaml
       - pnpm-workspace.yaml

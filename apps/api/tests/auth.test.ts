@@ -110,7 +110,7 @@ describe("auth routes", () => {
 
   it("keeps the auth routes out of the OpenAPI document", async () => {
     const res = await (await start()).inject({ method: "GET", url: "/openapi.json" })
-    const paths = Object.keys((res.json() as { paths: Record<string, unknown> }).paths)
+    const paths = Object.keys(res.json<{ paths: Record<string, unknown> }>().paths)
     expect(paths).toContain("/office")
     expect(paths.some((p) => p.startsWith("/api/auth"))).toBe(false)
   })

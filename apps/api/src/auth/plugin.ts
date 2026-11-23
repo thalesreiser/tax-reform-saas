@@ -107,7 +107,8 @@ export function registerAuth(app: FastifyInstance, { auth, db, baseUrl }: AuthRo
       if (request.method === "POST" && CREDENTIAL_PATHS.has(authPath(request))) {
         for (const check of [perIp, perEmail]) {
           const result = await check(request)
-          if (!result.isAllowed) {
+          // `isAllowed` is false for every counted request; `isExceeded` means over the limit.
+          if (!result.isAllowed && result.isExceeded) {
             reply.header("retry-after", String(result.ttlInSeconds))
             return sendProblem(
               reply,

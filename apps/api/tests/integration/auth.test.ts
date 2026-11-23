@@ -110,7 +110,7 @@ async function createOffice(cookie: string, name: string): Promise<string> {
     body: { name, slug: `escritorio-${randomUUID()}` },
   })
   expect(res.statusCode).toBe(200)
-  return (res.json() as { id: string }).id
+  return res.json<{ id: string }>().id
 }
 
 async function invite(cookie: string, officeId: string, email: string, role: string) {
@@ -184,7 +184,7 @@ describe("sign-up and sign-in", () => {
     const again = await signUp(email)
     const fresh = await signUp(uniqueEmail("novo"))
     expect(again.statusCode).toBe(fresh.statusCode)
-    expect(Object.keys(again.json() as object)).toEqual(Object.keys(fresh.json() as object))
+    expect(Object.keys(again.json<object>())).toEqual(Object.keys(fresh.json<object>()))
     const count = await db.admin.query("select 1 from auth_users where email = $1", [email])
     expect(count.rowCount).toBe(1)
   })
