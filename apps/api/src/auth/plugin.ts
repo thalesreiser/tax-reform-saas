@@ -1,6 +1,8 @@
 import { and, eq } from "drizzle-orm"
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify"
 import { z } from "zod"
+import { createAuditHooks } from "../audit/auth-hooks.js"
+import { authRequestContext } from "../audit/context.js"
 import { authMembers } from "../db/auth-schema.js"
 import { type Db, authDatabase } from "../db/client.js"
 import { problem, sendProblem } from "../problem.js"
@@ -41,6 +43,16 @@ export const CREDENTIAL_LIMITS = { perIp: 30, perEmail: 5 } as const
 const CREDENTIAL_PATHS = new Set(["/sign-in/email", "/sign-up/email", "/send-verification-email"])
 /** Body and query fields that better-auth passes to uuid columns: malformed ids are a 400. */
 const ID_FIELDS = ["id", "invitationId", "organizationId", "memberId", "userId"]
+/** Actions whose better-auth hooks do not say who acted: the session is read before them. */
+const ACTOR_PATHS = new Set(["/organization/remove-member", "/organization/update-member-role"])
+/** `organization/leave` has no better-auth hook; it answers with the member who left. */
+const LEAVE_PATH = "/organization/leave"
+const leftMemberSchema = z.object({
+  id: z.uuid(),
+  organizationId: z.uuid(),
+  userId: z.uuid(),
+  role: z.string(),
+})
 
 const uuid = z.uuid()
 
@@ -83,6 +95,7 @@ function activeOfficeId(session: object): string | undefined {
  */
 export function registerAuth(app: FastifyInstance, { auth, db, baseUrl }: AuthRoutesOptions): void {
   const database = authDatabase(db)
+  const audit = createAuditHooks(db)
   const perIp = app.createRateLimit({
     max: CREDENTIAL_LIMITS.perIp,
     timeWindow: WINDOW_MS,
@@ -128,12 +141,22 @@ export function registerAuth(app: FastifyInstance, { auth, db, baseUrl }: AuthRo
         return sendProblem(reply, problem(request, 400, { detail: `Invalid ${badId}.` }))
       }
 
-      const response = await auth.handler(
-        new Request(new URL(request.url, baseUrl), {
-          method: request.method,
-          headers: toHeaders(request),
-          ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
-        }),
+      const path = authPath(request)
+      const actor =
+        request.method === "POST" && ACTOR_PATHS.has(path)
+          ? await auth.api.getSession({ headers: toHeaders(request) })
+          : null
+      // Read by the audit hooks (src/audit/auth-hooks.ts): request id and, where needed, the actor.
+      const response = await authRequestContext.run(
+        { requestId: request.id, actorUserId: actor?.user.id ?? null },
+        () =>
+          auth.handler(
+            new Request(new URL(request.url, baseUrl), {
+              method: request.method,
+              headers: toHeaders(request),
+              ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
+            }),
+          ),
       )
 
       reply.code(response.status)
@@ -144,6 +167,12 @@ export function registerAuth(app: FastifyInstance, { auth, db, baseUrl }: AuthRo
       if (cookies.length > 0) reply.header("set-cookie", cookies)
 
       const text = await response.text()
+      if (response.status < 400 && path === LEAVE_PATH) {
+        const left = leftMemberSchema.parse(JSON.parse(text))
+        await authRequestContext.run({ requestId: request.id, actorUserId: left.userId }, () =>
+          audit.memberLeft(left),
+        )
+      }
       if (response.status < 400) return reply.send(text === "" ? null : text)
 
       // Errors become problem details, like every other route; 5xx causes stay out of the body.

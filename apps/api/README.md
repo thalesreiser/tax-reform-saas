@@ -8,6 +8,7 @@ Fastify 5 API: the internal routes used by the web app and the public `/v1` API 
 | `/openapi.json` | OpenAPI 3.1 document generated from the Zod schemas of each route |
 | `/api/auth/*`   | better-auth: sign-up, sign-in, sessions, offices, invitations     |
 | `/office`       | Active office of the session and the user's role in it            |
+| `/office/audit` | Audit log of the active office (owner only)                       |
 
 ## Conventions
 
@@ -147,3 +148,71 @@ membership is re-read on every request). Row-level security does the rest.
 - Shared rate-limit store (database or Redis) with more than one API instance, and `trustProxy`
   once the host is known, so limits see the client IP.
 - Web routes for e-mail links (`/convites/<id>`, verification callback): FE-01.3.
+
+## Audit log
+
+Append-only log of actions per office (RF-18), table `audit_events` (`0004_audit_events.sql`, RLS
+and append-only rules in `0005_audit_events_rls.sql`).
+
+### What is logged
+
+| Action                                                     | Resource   | Metadata                    |
+| ---------------------------------------------------------- | ---------- | --------------------------- |
+| `office.created`                                           | office     | none                        |
+| `office.updated`                                           | office     | names of the fields sent    |
+| `member.invited`                                           | invitation | invited role                |
+| `member.invitation_canceled`, `member.invitation_rejected` | invitation | none                        |
+| `member.joined`                                            | member     | role, invitation id         |
+| `member.role_changed`                                      | member     | previous and new role       |
+| `member.removed`, `member.left`                            | member     | role                        |
+| `client.created`, `client.updated`, `client.deleted`       | client     | names of the fields changed |
+
+Every event has the office, the actor (user id and role in the office; null for the system), the
+time (`occurred_at`, set by Postgres) and the `x-request-id` of the request. The `client.*` actions
+are ready for the client routes (BE-02.2); API keys and simulations add their actions the same way.
+
+### What is never logged
+
+Names, e-mails, CNPJs, fiscal values or any free text. Metadata is validated against a Zod
+allow-list per action (`src/audit/events.ts`) that holds only enums, ids and field names; a unit test
+fails if an action declares anything else. The column is also limited to a 1 KB JSON object.
+
+### Writing an event
+
+Inside the transaction of the action, so both commit or roll back together:
+
+```ts
+await withOffice(db, office.id, async (tx) => {
+  const [client] = await tx.insert(clients).values(values).returning()
+  await recordAudit(tx, {
+    action: "client.created",
+    resourceId: client.id,
+    metadata: {},
+    ...auditContext(request), // actor and request id, from app.requireOffice
+  })
+})
+```
+
+A new action is a value in `AUDIT_ACTIONS` (`src/db/schema.ts`, then `db:generate`) plus its
+metadata schema and resource type in `src/audit/events.ts`.
+
+better-auth's office, member and invitation actions are recorded by its organization after-hooks
+(`src/audit/auth-hooks.ts`). better-auth commits its own write before those hooks run, so that event
+is written right after the action in a separate transaction: if the event cannot be written, the
+request answers 500 but the action stands. `organization/leave` has no hook and is recorded by the
+auth route after it succeeds.
+
+### Access and retention
+
+- **Append-only:** `trs_app` has `SELECT` and `INSERT` only, and triggers reject `UPDATE`, `DELETE`
+  and `TRUNCATE` for every role, the owner included. Row-level security isolates offices.
+- **`GET /office/audit`:** owner only (accountants get 403). Newest first; `action`, `from`
+  (inclusive) and `to` (exclusive) filters; `limit` 1 to 100 (default 50); `cursor` from the
+  previous page's `nextCursor`.
+- `actor_user_id` has no foreign key, so a deleted user's events stay.
+
+### Pending
+
+- Retention period (kept forever for now) and what happens to a deleted user's events (LGPD,
+  BE-05.1).
+- Whether accountants may read the log.

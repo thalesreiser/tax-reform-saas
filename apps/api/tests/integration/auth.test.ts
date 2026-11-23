@@ -8,6 +8,7 @@ import { loadConfig } from "../../src/config.js"
 import { withOffice } from "../../src/db/client.js"
 import { clients } from "../../src/db/schema.js"
 import { problemSchema } from "../../src/problem.js"
+import { auditPageSchema } from "../../src/routes/audit.js"
 import { type TestDatabase, createClient, setupTestDatabase } from "./database.js"
 
 // Fictional people and offices only; addresses use the reserved .test domain.
@@ -343,5 +344,187 @@ describe("tenant bridge", () => {
   it("answers 403 for a user with no office", async () => {
     const res = await officeOf(await user(uniqueEmail("sem-escritorio")))
     expect(res.statusCode).toBe(403)
+  })
+})
+
+describe("audit log of auth actions (RF-18)", () => {
+  const ownerEmail = uniqueEmail("dona-auditoria")
+  const accountantEmail = uniqueEmail("contador-auditoria")
+  let owner: string
+  let accountant: string
+  let officeId: string
+  let ownerId: string
+  let accountantId: string
+  let memberId: string
+  let inviteRequestId: string
+  let acceptRequestId: string
+
+  const userId = async (email: string) =>
+    (await db.admin.query<{ id: string }>("select id from auth_users where email = $1", [email]))
+      .rows[0]?.id ?? ""
+
+  async function audit(cookie: string, query = "") {
+    return call("GET", `/office/audit${query}`, { cookie })
+  }
+
+  async function events(query = "") {
+    const res = await audit(owner, query)
+    expect(res.statusCode).toBe(200)
+    return auditPageSchema.parse(res.json())
+  }
+
+  beforeAll(async () => {
+    owner = await user(ownerEmail)
+    officeId = await createOffice(owner, "Escritório Auditoria")
+    const invited = await invite(owner, officeId, accountantEmail, "accountant")
+    expect(invited.statusCode).toBe(200)
+    inviteRequestId = String(invited.headers["x-request-id"])
+    const invitationId = invitationIdFor(accountantEmail)
+    accountant = await user(accountantEmail)
+    const accepted = await accept(accountant, invitationId)
+    expect(accepted.statusCode).toBe(200)
+    acceptRequestId = String(accepted.headers["x-request-id"])
+    memberId = accepted.json<{ member: { id: string } }>().member.id
+    ownerId = await userId(ownerEmail)
+    accountantId = await userId(accountantEmail)
+  })
+
+  it("records the office, the invitation and the join with actor and request id", async () => {
+    const { items } = await events()
+    expect(items.map((e) => e.action)).toEqual([
+      "member.joined",
+      "member.invited",
+      "office.created",
+    ])
+    const [joined, invited, created] = items
+    expect(created).toMatchObject({
+      actor: { userId: ownerId, role: "owner" },
+      resource: { type: "office", id: officeId },
+    })
+    expect(invited).toMatchObject({
+      actor: { userId: ownerId, role: "owner" },
+      resource: { type: "invitation" },
+      requestId: inviteRequestId,
+      metadata: { role: "accountant" },
+    })
+    expect(joined).toMatchObject({
+      actor: { userId: accountantId, role: "accountant" },
+      resource: { type: "member", id: memberId },
+      requestId: acceptRequestId,
+      metadata: { role: "accountant", invitationId: invited?.resource.id },
+    })
+  })
+
+  it("records who canceled an invitation and when", async () => {
+    const email = uniqueEmail("cancelado")
+    await invite(owner, officeId, email, "accountant")
+    const invitationId = invitationIdFor(email)
+    const before = Date.now()
+    const res = await call("POST", "/api/auth/organization/cancel-invitation", {
+      cookie: owner,
+      body: { invitationId },
+    })
+    expect(res.statusCode).toBe(200)
+    const { items } = await events("?action=member.invitation_canceled")
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      actor: { userId: ownerId, role: "owner" },
+      resource: { type: "invitation", id: invitationId },
+      requestId: res.headers["x-request-id"],
+    })
+    expect(Date.parse(items[0]?.occurredAt ?? "")).toBeGreaterThanOrEqual(before - 1000)
+  })
+
+  it("records a rename, a role change and a removal by the owner", async () => {
+    const renamed = await call("POST", "/api/auth/organization/update", {
+      cookie: owner,
+      body: { organizationId: officeId, data: { name: "Escritório Auditoria Novo" } },
+    })
+    expect(renamed.statusCode).toBe(200)
+    const roleChanged = await call("POST", "/api/auth/organization/update-member-role", {
+      cookie: owner,
+      body: { organizationId: officeId, memberId, role: "owner" },
+    })
+    expect(roleChanged.statusCode).toBe(200)
+    const removed = await call("POST", "/api/auth/organization/remove-member", {
+      cookie: owner,
+      body: { organizationId: officeId, memberIdOrEmail: memberId },
+    })
+    expect(removed.statusCode).toBe(200)
+
+    const { items } = await events()
+    const byOwner = { actor: { userId: ownerId, role: "owner" } }
+    expect(items.slice(0, 3)).toEqual([
+      expect.objectContaining({
+        ...byOwner,
+        action: "member.removed",
+        metadata: { role: "owner" },
+        requestId: removed.headers["x-request-id"],
+      }),
+      expect.objectContaining({
+        ...byOwner,
+        action: "member.role_changed",
+        resource: { type: "member", id: memberId },
+        metadata: { from: "accountant", to: "owner" },
+      }),
+      expect.objectContaining({
+        ...byOwner,
+        action: "office.updated",
+        metadata: { fields: ["name"] },
+      }),
+    ])
+  })
+
+  it("never stores names or e-mails", async () => {
+    const stored = await db.admin.query("select * from audit_events where office_id = $1", [
+      officeId,
+    ])
+    const text = JSON.stringify(stored.rows)
+    for (const secret of [ownerEmail, accountantEmail, "Escritório", "Pessoa Teste"]) {
+      expect(text).not.toContain(secret)
+    }
+  })
+
+  it("pages with a cursor and filters by date", async () => {
+    const all = await events()
+    const first = await events("?limit=2")
+    expect(first.items).toEqual(all.items.slice(0, 2))
+    expect(first.nextCursor).not.toBeNull()
+    const second = await events(`?limit=2&cursor=${first.nextCursor ?? ""}`)
+    expect(second.items).toEqual(all.items.slice(2, 4))
+    const future = await events(`?from=${new Date(Date.now() + 60_000).toISOString()}`)
+    expect(future).toEqual({ items: [], nextCursor: null })
+    expect((await audit(owner, "?cursor=nope")).statusCode).toBe(400)
+  })
+
+  it("is owner-only", async () => {
+    const email = uniqueEmail("contadora-auditoria")
+    await invite(owner, officeId, email, "accountant")
+    const invitationId = invitationIdFor(email)
+    const other = await user(email)
+    expect((await accept(other, invitationId)).statusCode).toBe(200)
+    const res = await audit(other)
+    expect(res.statusCode).toBe(403)
+    expect(problemSchema.parse(res.json()).status).toBe(403)
+    expect((await audit("")).statusCode).toBe(401)
+  })
+
+  it("records a member who leaves", async () => {
+    const email = uniqueEmail("saindo")
+    await invite(owner, officeId, email, "accountant")
+    const invitationId = invitationIdFor(email)
+    const leaver = await user(email)
+    expect((await accept(leaver, invitationId)).statusCode).toBe(200)
+    const res = await call("POST", "/api/auth/organization/leave", {
+      cookie: leaver,
+      body: { organizationId: officeId },
+    })
+    expect(res.statusCode).toBe(200)
+    const { items } = await events("?action=member.left")
+    expect(items[0]).toMatchObject({
+      actor: { userId: await userId(email), role: "accountant" },
+      metadata: { role: "accountant" },
+      requestId: res.headers["x-request-id"],
+    })
   })
 })
