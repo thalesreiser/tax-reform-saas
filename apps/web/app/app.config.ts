@@ -6,6 +6,8 @@ export default defineAppConfig({
 
   ui: {
     colors: auroraColors,
+    // Nuxt UI dims alert descriptions (`opacity-90`); full opacity keeps them at 4.5:1 on the tint.
+    alert: { slots: { description: "opacity-100" } },
     button: {
       // Nuxt UI darkens solid buttons on hover with transparency (`bg-primary/75`), which drops
       // white text below 4.5:1. Hover and active use the next opaque shade instead.

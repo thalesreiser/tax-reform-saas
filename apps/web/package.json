@@ -19,7 +19,8 @@
     "nuxt": "catalog:",
     "tailwindcss": "catalog:",
     "vue": "catalog:",
-    "vue-router": "catalog:"
+    "vue-router": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@iconify-json/lucide": "catalog:",

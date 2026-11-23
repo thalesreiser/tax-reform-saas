@@ -169,6 +169,16 @@ describe.each<Mode>(["light", "dark"])("Aurora tokens, %s mode", (mode) => {
     expect(worst(opaque(text, mode), pills)).toBeGreaterThanOrEqual(TEXT)
   })
 
+  // UAlert subtle (auth screens): `text-<color>` on `bg-<color>/10`; descriptions at full opacity.
+  it.each(["error", "success", "info", "warning"])(
+    "%s alert text reaches 4.5:1 on its 10%% tint over every surface",
+    (name) => {
+      const text = color(`--ui-${name}`, mode)
+      const alerts = surfaces(mode).map((s) => over({ rgb: text.rgb, alpha: 0.1 }, s))
+      expect(worst(opaque(`--ui-${name}`, mode), alerts)).toBeGreaterThanOrEqual(TEXT)
+    },
+  )
+
   it("white text reaches 4.5:1 along the whole strong brand gradient", () => {
     const strong = gradient(["--aurora-brand-from", "--aurora-brand-strong-to"], mode)
     expect(worst(opaque("--aurora-on-brand", mode), strong)).toBeGreaterThanOrEqual(TEXT)

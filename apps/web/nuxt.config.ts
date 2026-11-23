@@ -8,6 +8,13 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   telemetry: false,
 
+  runtimeConfig: {
+    public: {
+      // Public URL of the API (better-auth under /api/auth); NUXT_PUBLIC_API_URL at runtime.
+      apiUrl: "http://localhost:3000",
+    },
+  },
+
   ui: {
     // No external font provider: Outfit is bundled from @fontsource-variable/outfit.
     fonts: false,
