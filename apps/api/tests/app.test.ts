@@ -58,12 +58,13 @@ describe("problem details", () => {
   it("lists each invalid field on validation errors", async () => {
     const api = await start((a) => {
       a.post(
-        "/echo",
+        "/validate",
         { schema: { body: z.object({ cnpj: z.string().length(14), amount: z.string() }) } },
-        (req) => req.body,
+        // Never reflect the request body: it would be an XSS sink and carries fiscal data.
+        () => ({ accepted: true }),
       )
     })
-    const res = await api.inject({ method: "POST", url: "/echo", payload: { cnpj: "123" } })
+    const res = await api.inject({ method: "POST", url: "/validate", payload: { cnpj: "123" } })
     expect(res.statusCode).toBe(400)
     expect(res.headers["content-type"]).toContain(PROBLEM_CONTENT_TYPE)
     const body = problemSchema.parse(res.json())
