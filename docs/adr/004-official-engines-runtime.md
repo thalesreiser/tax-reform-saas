@@ -69,7 +69,26 @@ Runtime, simples-nacional 1.0.2:
 | same + `-XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=64m` | 384 MB   | 13.5 s        | 10.6 s       | 327 MB   | 351 MB         | 351 MB   | 24 ms        |
 
 The 512 MB rows also use `-Xss512k`. `-XX:MaxRAM=512m` makes the JVM size itself as in a 512 MB
-container; it does not enforce the limit. A real cgroup limit is tested in MOT-01.2.
+container; it does not enforce the limit. A real cgroup limit was tested in MOT-01.2 (below).
+
+Under a real container limit (MOT-01.2, `.github/workflows/engine-images.yml`, run of 2026-11-23 on
+`ubuntu-latest`): images from `engines/Dockerfile` (Temurin 25.0.5.1 JRE), started with
+`engines/compose.yml` at **768 MB per engine, no swap**, read-only root file system,
+`-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -Xss512k -XX:+ExitOnOutOfMemoryError`. Figures after the
+official example plus 200 more requests. "cgroup peak" is the container's `memory.peak` (process
+plus page cache plus tmpfs, what the limit enforces); "JVM peak RSS" is `VmHWM` of the java process.
+
+| Engine           | Healthy after | Spring start | Memory after load | cgroup peak | JVM peak RSS | Limit  | OOM kills | Example |
+| ---------------- | ------------- | ------------ | ----------------- | ----------- | ------------ | ------ | --------- | ------- |
+| regime-regular   | 25.5 s        | 19.9 s       | 471 MB            | 475 MB      | 494 MB       | 768 MB | 0         | pass    |
+| simples-nacional | 22.0 s        | 17.6 s       | 432 MB            | 436 MB      | 457 MB       | 768 MB | 0         | pass    |
+
+Both engines ran at the same time on the runner, which explains the slower start than alone. The
+version endpoints returned the pinned tags (`1.7.2`, `1.0.2`) and the same database version
+(`V0073`, 2026-11-09). Trivy found no HIGH or CRITICAL vulnerability in either image. At 768 MB the
+regime-regular engine keeps about 290 MB of headroom (38 %) after this light load; the heap can
+still grow to 576 MB under sustained load, so 768 MB remains the recommendation and 512 MB is not
+safe for it without the C1-only flags.
 
 Reading the numbers:
 
@@ -107,8 +126,8 @@ Awaiting Thales's acceptance.
 
 ## Consequences
 
-- MOT-01.2 builds one image per engine from the jar and database this workflow produces, runs it
-  with the flags above under a real memory limit and repeats the smoke test.
+- MOT-01.2 builds one image per engine (`engines/Dockerfile`), runs both with the flags above
+  under a real 768 MB limit (`engines/compose.yml`) and repeats the smoke test; measured above.
 - DEC-01: a VPS or managed plan needs about 2 GB RAM for the two engines and the API; 1 vCPU
   plans will start slower.
 - MOT-01.4 bumps tag and SHA together; the weekly workflow run already catches upstream or runner
