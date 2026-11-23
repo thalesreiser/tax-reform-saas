@@ -8,4 +8,5 @@ Each app is created by its own task, so this folder starts empty.
 | `apps/web`       | Nuxt 4 dashboard, simulator, share view and landing, see its README | FE-01.1  |
 | `apps/extension` | WXT browser extension for the Emissor Nacional da NFS-e             | EXT-01.2 |
 
-Planned packages: `packages/engine-client` (MOT-01.3) and `packages/simulation` (MOT-03.2).
+The official engines are reached through `packages/engine-client` (MOT-01.3). Planned package:
+`packages/simulation` (MOT-03.2).

@@ -1,0 +1,35 @@
+{
+  "name": "@trs/engine-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:engines": "vitest run --config vitest.engines.config.ts",
+    "generate": "node scripts/generate.mjs"
+  },
+  "dependencies": {
+    "@trs/tax-legacy": "workspace:*",
+    "openapi-fetch": "catalog:"
+  },
+  "devDependencies": {
+    "@trs/eslint-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "openapi-typescript": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

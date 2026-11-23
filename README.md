@@ -38,6 +38,7 @@ Everything is verified in CI on each pull request. Commits follow Conventional C
 | Path                     | Content                                                                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `apps/`                  | API, web app and browser extension (see its README)                                                             |
+| `packages/engine-client` | Typed client of the official engines (`engines/`), the only way to reach them                                   |
 | `packages/eslint-config` | Shared ESLint flat config                                                                                       |
 | `packages/shared-types`  | Types shared by the API, the web app and the SDK                                                                |
 | `packages/tax-legacy`    | Current-tax engine: decimal policy, versioned rule tables ([ADR 003](docs/adr/003-current-tax-engine-model.md)) |

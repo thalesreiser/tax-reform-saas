@@ -10,6 +10,7 @@ on:
     branches: [develop, main]
     paths: &engine-image-paths
       - engines/**
+      - packages/engine-client/**
       - .github/workflows/engine-images.yml
   push:
     branches: [develop, main]
@@ -152,6 +153,52 @@ jobs:
             status=1
           fi
           exit "$status"
+
+      # The engine client's types are generated from these documents (MOT-01.3). Server URLs depend
+      # on the host and are dropped; keys are sorted so the comparison is stable.
+      - name: Check the OpenAPI documents against packages/engine-client/openapi
+        run: |
+          mkdir -p openapi
+          status=0
+          for pair in regime-regular:8080 simples-nacional:8082; do
+            name=${pair%%:*}
+            curl -fsS "http://127.0.0.1:${pair#*:}/api/api-docs" | jq -S 'del(.servers)' > "openapi/$name.json"
+            if ! diff -u "packages/engine-client/openapi/$name.json" "openapi/$name.json" > "openapi/$name.diff"; then
+              echo "::error::the $name OpenAPI document differs from packages/engine-client/openapi/$name.json (diff in the engine-openapi artifact)"
+              status=1
+            fi
+          done
+          exit "$status"
+
+      - name: Upload the OpenAPI documents
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: engine-openapi
+          path: openapi/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # The typed client against the running containers (MOT-01.3): no second set of engines to start.
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check that the generated client matches the OpenAPI documents
+        run: |
+          pnpm --filter @trs/engine-client generate
+          git diff --exit-code -- packages/engine-client/src/generated
+
+      - name: Engine client against the engines
+        env:
+          ENGINE_REGIME_REGULAR_URL: http://127.0.0.1:8080
+          ENGINE_SIMPLES_NACIONAL_URL: http://127.0.0.1:8082
+        run: |
+          pnpm --filter "@trs/engine-client^..." build
+          pnpm --filter @trs/engine-client test:engines
 
       - name: Write the results to the job summary
         if: always()
