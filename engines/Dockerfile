@@ -10,10 +10,17 @@
 #
 # Base images are pinned by digest; Dependabot (docker ecosystem) proposes updates.
 
+# Build tools: the upstream Maven wrapper (3.2.0) downloads its jar with curl or wget, and the JDK
+# image has neither. Only this build stage gets curl; the runtime image does not.
+# eclipse-temurin:25.0.5.1_2-jdk-noble
+FROM eclipse-temurin:25.0.5.1_2-jdk-noble@sha256:c7eef3dfeb81468533ea48c67bddaa8c7ca916454259e4d0d734d12bcff8e125 AS maven
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
 # Shared database: Flyway SQLite file generated from the regime-regular scripts. The Simples
 # repository has none; its README says to use these, so both images carry the same file.
-# eclipse-temurin:25.0.5.1_2-jdk-noble
-FROM eclipse-temurin:25.0.5.1_2-jdk-noble@sha256:c7eef3dfeb81468533ea48c67bddaa8c7ca916454259e4d0d734d12bcff8e125 AS database
+FROM maven AS database
 WORKDIR /src
 COPY --from=regime-regular . .
 RUN --mount=type=cache,target=/root/.m2,id=engines-m2,sharing=locked \
@@ -23,8 +30,7 @@ RUN --mount=type=cache,target=/root/.m2,id=engines-m2,sharing=locked \
 
 # Jar built with the upstream Maven wrapper. Upstream tests are skipped: they are the publisher's
 # responsibility, and CI checks the image against the official example.
-# eclipse-temurin:25.0.5.1_2-jdk-noble
-FROM eclipse-temurin:25.0.5.1_2-jdk-noble@sha256:c7eef3dfeb81468533ea48c67bddaa8c7ca916454259e4d0d734d12bcff8e125 AS build
+FROM maven AS build
 ARG JAR
 WORKDIR /src
 COPY . .
