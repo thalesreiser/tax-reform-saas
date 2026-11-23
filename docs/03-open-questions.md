@@ -13,7 +13,6 @@ ends in an ADR.
 | Q-04 | Should the comparison include IRPJ, CSLL and CPP, or only consumption taxes | Only consumption taxes in the MVP; Simples DAS split to isolate them | MOT-02.2, MOT-03.2 |
 | Q-05 | ICMS-ST, DIFAL and state benefits stay out of the MVP | Yes, out; show a notice when the profile needs them | MOT-02.4 |
 | Q-06 | Partner accountant: availability per week, how golden cases are delivered, compensation | Spreadsheet of cases per regime, one review session per week | MOT-02.7, MOT-03.3 |
-| Q-07 | First web issuer for the extension | Emissor Nacional da NFS-e (public, standard, widely used) | EXT-01.1 |
 | Q-08 | API key per client company or per office | Per client company, created by the office | BE-03.1 |
 | DEC-01 | Hosting for the API and the JVM engines: VPS (Hetzner) or managed (Fly.io/Railway) | VPS with docker compose for cost; managed if ops time is a concern | EST-03.1 |
 | DEC-02 | Repository visibility | Private, proprietary | EST-01.3 |
@@ -28,3 +27,4 @@ ends in an ADR.
 | — | Simulator = current vs reform, 2026-2033 | 2026-11-23 | — |
 | — | Customer = accounting offices | 2026-11-23 | — |
 | — | Thales has a partner accountant to validate rules | 2026-11-23 | — |
+| Q-07 | The extension's first target is the Emissor Nacional da NFS-e; the form mapping and its risks become an ADR in EXT-01.1 | 2026-11-23 | — |
