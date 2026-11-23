@@ -192,7 +192,8 @@ describe("sign-up and sign-in", () => {
   it("answers 429 after too many failed sign-ins for one e-mail", async () => {
     const email = uniqueEmail("alvo")
     await user(email)
-    for (let i = 0; i < CREDENTIAL_LIMITS.perEmail; i++) {
+    // user() already spent two attempts on this e-mail: its sign-up and sign-in.
+    for (let i = 2; i < CREDENTIAL_LIMITS.perEmail; i++) {
       expect((await signIn(email, "senha-errada-123")).statusCode).toBe(401)
     }
     const limited = await signIn(email)
@@ -276,8 +277,9 @@ describe("offices and invitations (RF-01)", () => {
   it("lets only the owner invite", async () => {
     const email = uniqueEmail("contadora")
     await invite(owner, officeA, email, "accountant")
+    const invitationId = invitationIdFor(email)
     const accountant = await user(email)
-    await accept(accountant, invitationIdFor(email))
+    expect((await accept(accountant, invitationId)).statusCode).toBe(200)
 
     const res = await invite(accountant, officeA, uniqueEmail("outro"), "accountant")
     expect(res.statusCode).toBe(403)
