@@ -14,9 +14,29 @@ invoice-time calculation through a public API, SDK and browser extension.
 
 ## Status
 
-Planning (EST-01.1). Stack: [ADR 001](docs/adr/001-stack.md).
+Foundation (EST-01.2). Stack: [ADR 001](docs/adr/001-stack.md).
 
 ## License
 
 Proprietary. All rights reserved. The official engines used at runtime are MIT-licensed by Receita
 Federal and are not modified.
+
+## Development
+
+Requirements: Node 24 (`.nvmrc`) and pnpm 10 (`corepack enable`).
+
+```bash
+pnpm install
+pnpm lint
+pnpm typecheck
+pnpm test
+```
+
+Everything is verified in CI on each pull request. Commits follow Conventional Commits
+(checked by commitlint).
+
+| Path                     | Content                                             |
+| ------------------------ | --------------------------------------------------- |
+| `apps/`                  | API, web app and browser extension (see its README) |
+| `packages/eslint-config` | Shared ESLint flat config                           |
+| `packages/shared-types`  | Types shared by the API, the web app and the SDK    |
