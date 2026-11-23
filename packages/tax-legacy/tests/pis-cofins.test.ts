@@ -25,12 +25,11 @@ function run(
     creditablePurchases?: string
   },
 ) {
+  const { revenue, creditablePurchases, ...rest } = input
   return calculatePisCofins({
-    ...input,
-    revenue: dec(input.revenue),
-    ...(input.creditablePurchases === undefined
-      ? {}
-      : { creditablePurchases: dec(input.creditablePurchases) }),
+    ...rest,
+    revenue: dec(revenue),
+    ...(creditablePurchases === undefined ? {} : { creditablePurchases: dec(creditablePurchases) }),
   })
 }
 
