@@ -38,7 +38,8 @@ describe("calculateRegimeGeralWithObservability", () => {
 
   it("sends decimals as plain text", async () => {
     const fetch = mockFetch(jsonResponse(recorded))
-    const [first] = request.itens ?? []
+    const first = request.itens?.[0]
+    if (!first) throw new Error("the example has no items")
     const input: RegimeGeralInput = {
       ...request,
       itens: [{ ...first, baseCalculo: dec("100.50") }],
