@@ -231,7 +231,7 @@ At 25 h per week the M scope takes 12 weeks; at 20 h per week, 15 weeks (Q-03).
 
 | ID | Task | Req. | Prio. | Est. | Depends on |
 |---|---|---|---|---|---|
-| EXT-01.1 | Spike: map the target issuer's invoice form | RF-16 | M | 5 h | Q-07 |
+| EXT-01.1 | Spike: map the Emissor Nacional da NFS-e invoice form | RF-16 | M | 5 h | — |
 | EXT-01.2 | WXT scaffold, sign-in with API key, options page | RF-16 | M | 5 h | EXT-01.1, BE-03.1 |
 | EXT-01.3 | Read the form, call the API, show the result panel | RF-16 | M | 6 h | EXT-01.2, BE-03.3 |
 | EXT-01.4 | Fill the IBS/CBS fields and show validation errors | RF-16 | M | 6 h | EXT-01.3 |

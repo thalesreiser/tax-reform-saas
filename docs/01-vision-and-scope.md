@@ -32,7 +32,7 @@ A SaaS sold to **accounting offices**. Each office onboards its client companies
    - **Public API + SDK** for software houses and ERPs: returns the IBS/CBS/IS values and the
      ready XML group for the invoice, using the client's fiscal profile as defaults.
    - **Browser extension** that reads the invoice form in a web issuer (first target: Emissor
-     Nacional da NFS-e, see Q-07), calls the API and fills the IBS/CBS fields.
+     Nacional da NFS-e, decided in Q-07), calls the API and fills the IBS/CBS fields.
 
 ## Scope of the MVP (about 12 weeks, one developer)
 
