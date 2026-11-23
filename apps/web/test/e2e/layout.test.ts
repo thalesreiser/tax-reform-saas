@@ -32,7 +32,8 @@ describe("base layout (server-rendered)", () => {
   })
 
   it("renders the error page inside the layout with a 404 status", async () => {
-    const response = await fetch("/pagina-que-nao-existe")
+    // A browser navigation asks for HTML; without it Nuxt answers with the JSON error payload.
+    const response = await fetch("/pagina-que-nao-existe", { headers: { accept: "text/html" } })
     expect(response.status).toBe(404)
 
     const html = await response.text()
