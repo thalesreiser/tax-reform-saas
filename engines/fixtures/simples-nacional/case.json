@@ -1,0 +1,10 @@
+{
+  "source": "https://github.com/ReceitaFederal/calculadora-rtc-simples-nacional/blob/1.0.2/src/main/java/br/gov/serpro/rtc/api/simplesnacional/controller/SimplesNacionalControllerOpenApi.java (EXEMPLO_NFE; values from SimplesNacionalNaoAssistidoControllerTest.regra3)",
+  "path": "/api/calculadora/observabilidade/simples-nacional/nao-assistido",
+  "checks": {
+    ".resolucaoAliquotas.itens[0].anexoAplicado": "I",
+    ".resolucaoAliquotas.itens[0].pCBSSN": "1.1612",
+    ".objetos[0].tribCalc.vCBSSN": "11.61",
+    ".objetos[0].tribCalc.vIBSSN": "0.13"
+  }
+}
