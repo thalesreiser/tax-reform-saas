@@ -30,3 +30,19 @@ updates:
       timezone: America/Sao_Paulo
     commit-message:
       prefix: ci
+
+  - package-ecosystem: docker
+    directory: /apps/api
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      # The image follows the Node 24 runtime (.nvmrc, engines).
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
