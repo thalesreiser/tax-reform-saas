@@ -123,7 +123,7 @@ jobs:
           SECONDS=0
           ./mvnw --batch-mode --errors flyway:migrate -Dflyway.configFiles=./flyway/flyway-pro.conf
           size=$(du -m calculadora/db/calculadora-pro.db | cut -f 1)
-          echo "- Flyway database generation: ${SECONDS}s, ${size} MB" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Flyway database generation: ${SECONDS}s, ${size} MB" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Copy the database to the Simples engine
         if: matrix.engine == 'simples-nacional'
@@ -139,7 +139,7 @@ jobs:
           SECONDS=0
           ./mvnw --batch-mode --errors -DskipTests package
           size=$(du -m "target/${{ matrix.jar }}" | cut -f 1)
-          echo "- Jar build (\`mvnw package -DskipTests\`): ${SECONDS}s, ${size} MB" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Jar build (\`mvnw package -DskipTests\`): ${SECONDS}s, ${size} MB" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Results table header
         run: |
@@ -172,7 +172,7 @@ jobs:
       - name: Write the results to the job summary
         if: always()
         run: |
-          if [[ -f "$RESULTS_FILE" ]]; then cat "$RESULTS_FILE" >> "$GITHUB_STEP_SUMMARY"; fi
+          if [[ -f "$RESULTS_FILE" ]]; then tee -a "$GITHUB_STEP_SUMMARY" < "$RESULTS_FILE"; fi
 
       # Jar and database for MOT-01.2 (images) to reuse while the image build is written.
       - name: Upload the jar and the database
@@ -193,5 +193,6 @@ jobs:
           path: |
             ${{ env.ENGINE_DIR }}/engine-*.log
             ${{ env.ENGINE_DIR }}/response-*.json
+            ${{ env.RESULTS_FILE }}
           if-no-files-found: ignore
           retention-days: 14
