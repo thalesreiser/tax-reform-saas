@@ -31,7 +31,9 @@ export const DEFAULT_TIMEOUT_MS = 10_000
 
 /** Engine root without trailing slashes, plus the Spring context path of both engines. */
 export function apiBaseUrl(baseUrl: string): string {
-  return `${baseUrl.replace(/\/+$/, "")}/api`
+  let end = baseUrl.length
+  while (end > 0 && baseUrl[end - 1] === "/") end--
+  return `${baseUrl.slice(0, end)}/api`
 }
 
 class NetworkError extends Error {}

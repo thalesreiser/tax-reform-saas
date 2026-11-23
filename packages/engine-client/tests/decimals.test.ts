@@ -38,7 +38,7 @@ describe("decimalize", () => {
   })
 
   it("rejects numbers that may have lost precision and text that is not a decimal", () => {
-    expect(() => decimalize(12345678901234.567, "decimal", shapes)).toThrow(InvalidDecimalError)
+    expect(() => decimalize(0.1 + 0.2, "decimal", shapes)).toThrow(InvalidDecimalError)
     expect(() => decimalize(1e-7, "decimal", shapes)).toThrow(InvalidDecimalError)
     expect(() => decimalize("1.200,00", "decimal", shapes)).toThrow(InvalidDecimalError)
     expect(() => decimalize(true, "decimal", shapes)).toThrow(InvalidDecimalError)

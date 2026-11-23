@@ -24,8 +24,7 @@ export function toItemResult<I extends EngineItem>(item: I): ItemResult<I> {
     return { ...rest, status: "calculated" }
   }
   const { tribCalc: _tribCalc, ...withoutTaxes } = rest
-  const failed = { ...withoutTaxes, status: "not-calculated" as const, errors }
-  return failed as unknown as ItemResult<I>
+  return { ...withoutTaxes, status: "not-calculated", errors }
 }
 
 /** Replaces `objetos` with typed `items`. */
