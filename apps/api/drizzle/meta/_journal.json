@@ -15,6 +15,20 @@
       "when": 1795444167322,
       "tag": "0001_office_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795457172347,
+      "tag": "0002_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795457177347,
+      "tag": "0003_auth_rls",
+      "breakpoints": true
     }
   ]
 }
