@@ -102,6 +102,8 @@ These run in CI. Locally, only `pnpm install --lockfile-only` is needed to updat
 - Follow existing patterns and reuse packages and schemas before creating new ones.
 - One task per branch and per PR, roughly 400 changed lines at most, not counting the lockfile and
   generated code; split bigger work.
+- GitHub Actions are pinned to a full commit SHA with the version in a comment
+  (`uses: owner/action@<sha> # v1.2.3`); Dependabot keeps them updated. Never use a floating tag.
 - Tax and business rules ship with tests. Never delete, weaken or skip a test to make CI pass.
 - **Language:** code, commits, branches, PRs and repository docs in English; Trello cards and comments
   in Brazilian Portuguese; user-facing text in Brazilian Portuguese.
