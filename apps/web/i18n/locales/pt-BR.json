@@ -16,5 +16,100 @@
       "description": "Ocorreu um erro inesperado. Tente novamente em instantes."
     },
     "backHome": "Voltar para a página inicial"
+  },
+  "roles": {
+    "owner": "Proprietário",
+    "accountant": "Contador"
+  },
+  "auth": {
+    "fields": {
+      "name": "Seu nome",
+      "officeName": "Nome do escritório",
+      "email": "E-mail",
+      "password": "Senha",
+      "newPassword": "Nova senha",
+      "passwordHelp": "Pelo menos {min} caracteres."
+    },
+    "validation": {
+      "emailRequired": "Informe seu e-mail.",
+      "emailInvalid": "Informe um e-mail válido.",
+      "passwordRequired": "Informe sua senha.",
+      "passwordLength": "A senha deve ter de {min} a {max} caracteres.",
+      "nameRequired": "Informe seu nome.",
+      "officeNameRequired": "Informe o nome do escritório.",
+      "tooLong": "Use no máximo 100 caracteres."
+    },
+    "errors": {
+      "invalidCredentials": "E-mail ou senha incorretos.",
+      "emailNotVerified": "Confirme seu e-mail para continuar. Procure a mensagem que enviamos na sua caixa de entrada.",
+      "invitationUnavailable": "Este convite não está mais disponível: ele expirou, já foi usado ou foi cancelado. Peça um novo convite ao escritório.",
+      "invitationOtherEmail": "Este convite foi enviado para outro e-mail. Entre com o e-mail que recebeu o convite.",
+      "linkInvalid": "Este link é inválido ou expirou.",
+      "resetUnavailable": "A redefinição de senha ainda não está disponível. Tente novamente mais tarde.",
+      "passwordLength": "A senha deve ter de 10 a 128 caracteres.",
+      "officeTaken": "Não foi possível criar o escritório com esse nome. Tente novamente.",
+      "tooManyAttempts": "Muitas tentativas. Tente novamente em {minutes} minuto. | Muitas tentativas. Tente novamente em {minutes} minutos.",
+      "tooManyAttemptsLater": "Muitas tentativas. Tente novamente em alguns minutos.",
+      "network": "Não foi possível conectar. Verifique sua internet e tente novamente.",
+      "generic": "Algo deu errado. Tente novamente em instantes."
+    },
+    "signIn": {
+      "title": "Entrar",
+      "description": "Acesse o painel do seu escritório.",
+      "submit": "Entrar",
+      "forgot": "Esqueci minha senha",
+      "noAccount": "Ainda não tem conta?",
+      "signUp": "Criar conta"
+    },
+    "signUp": {
+      "title": "Criar conta",
+      "description": "Cadastre-se para usar o sistema.",
+      "submit": "Criar conta",
+      "hasAccount": "Já tem conta?",
+      "checkEmailTitle": "Confira seu e-mail",
+      "checkEmail": "Se o endereço {email} puder ser cadastrado, enviamos um link para confirmar o e-mail. Siga o link e depois entre."
+    },
+    "verify": {
+      "title": "Confirmar e-mail",
+      "description": "Informe seu e-mail para receber um novo link de confirmação.",
+      "confirmedTitle": "E-mail confirmado",
+      "confirmed": "Seu e-mail foi confirmado. Entre para continuar.",
+      "resend": "Reenviar e-mail de confirmação",
+      "resent": "Se houver uma conta pendente com esse e-mail, enviamos um novo link de confirmação."
+    },
+    "forgot": {
+      "title": "Esqueci minha senha",
+      "description": "Informe seu e-mail para receber um link de redefinição.",
+      "submit": "Enviar link",
+      "sent": "Se houver uma conta com esse e-mail, enviamos um link para redefinir a senha."
+    },
+    "reset": {
+      "title": "Redefinir senha",
+      "description": "Escolha uma nova senha.",
+      "submit": "Salvar nova senha",
+      "again": "Pedir um novo link",
+      "doneTitle": "Senha alterada",
+      "done": "Sua senha foi alterada. Entre com a nova senha."
+    },
+    "invitation": {
+      "title": "Convite",
+      "signInFirst": "Para ver e aceitar o convite, entre ou crie sua conta com o e-mail que recebeu o convite.",
+      "summary": "Você foi convidado para o escritório {office} como {role}.",
+      "accept": "Aceitar convite",
+      "signedInAs": "Você entrou como {email}.",
+      "switchAccount": "Entrar com outro e-mail"
+    },
+    "backToSignIn": "Voltar para entrar",
+    "signOut": "Sair"
+  },
+  "dashboard": {
+    "title": "Painel",
+    "role": "Seu papel: {role}",
+    "placeholder": "Em construção.",
+    "createOffice": {
+      "title": "Crie seu escritório",
+      "description": "Dê um nome ao seu escritório para começar.",
+      "submit": "Criar escritório"
+    }
   }
 }
