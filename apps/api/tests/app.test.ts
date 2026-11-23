@@ -4,13 +4,14 @@ import { type App, REQUEST_ID_HEADER, buildApp } from "../src/app.js"
 import { loadConfig } from "../src/config.js"
 import { PROBLEM_CONTENT_TYPE, problemSchema } from "../src/problem.js"
 import { healthResponseSchema } from "../src/routes/health.js"
+import { TEST_ENV } from "./env.js"
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
 let app: App | undefined
 
 async function start(extra?: (app: App) => void): Promise<App> {
-  app = await buildApp(loadConfig({ NODE_ENV: "test", LOG_LEVEL: "silent", APP_VERSION: "1.2.3" }))
+  app = await buildApp(loadConfig({ ...TEST_ENV, APP_VERSION: "1.2.3" }))
   extra?.(app)
   await app.ready()
   return app

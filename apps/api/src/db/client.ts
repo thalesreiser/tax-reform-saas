@@ -2,9 +2,13 @@ import { sql } from "drizzle-orm"
 import { type NodePgDatabase, drizzle } from "drizzle-orm/node-postgres"
 import pg from "pg"
 import { z } from "zod"
+import { authSchema } from "./auth-schema.js"
 import * as schema from "./schema.js"
 
 type Drizzle = NodePgDatabase<typeof schema>
+
+/** Query builder over the better-auth tables only (no row-level security, see auth-schema.ts). */
+export type AuthDatabase = NodePgDatabase<typeof authSchema>
 
 /** Transaction handed to `withOffice` callbacks: every query in it is scoped to one office. */
 export type OfficeTx = Parameters<Parameters<Drizzle["transaction"]>[0]>[0]
@@ -17,6 +21,7 @@ export interface Db {
 
 // Module-private: code outside this file reaches the query builder only through withOffice().
 const handles = new WeakMap<Db, Drizzle>()
+const authHandles = new WeakMap<Db, AuthDatabase>()
 
 /**
  * Connects lazily as the application role (`DATABASE_URL`, a member of `trs_app`): no connection
@@ -26,7 +31,18 @@ export function createDb(connectionString: string, options: { max?: number } = {
   const pool = new pg.Pool({ connectionString, max: options.max ?? 10 })
   const db: Db = { close: () => pool.end() }
   handles.set(db, drizzle({ client: pool, schema }))
+  authHandles.set(db, drizzle({ client: pool, schema: authSchema }))
   return db
+}
+
+/**
+ * The better-auth tables, for the auth adapter and the session bridge (src/auth). Its schema holds
+ * no tenant table, and those tables answer zero rows outside withOffice() anyway.
+ */
+export function authDatabase(db: Db): AuthDatabase {
+  const handle = authHandles.get(db)
+  if (handle === undefined) throw new TypeError("Not a database created by createDb().")
+  return handle
 }
 
 const officeIdSchema = z.uuid()

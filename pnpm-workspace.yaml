@@ -7,6 +7,7 @@ catalog:
   "@commitlint/cli": 21.2.4
   "@commitlint/config-conventional": 21.2.4
   "@eslint/js": 10.0.1
+  "@fastify/rate-limit": 11.3.0
   "@fastify/swagger": 9.9.5
   "@fontsource-variable/outfit": 5.3.0
   "@iconify-json/lucide": 1.2.158
@@ -15,6 +16,7 @@ catalog:
   "@nuxtjs/i18n": 10.6.0
   "@types/node": 24.19.2
   "@types/pg": 8.23.1
+  better-auth: 1.7.27
   decimal.js: 10.6.0
   drizzle-kit: 0.31.11
   drizzle-orm: 0.45.4

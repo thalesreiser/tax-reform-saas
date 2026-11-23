@@ -9,13 +9,16 @@ const configSchema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   /** Set by the deploy pipeline (git tag or commit); shown by /health. */
   APP_VERSION: z.string().min(1).default("dev"),
-  /**
-   * Application role (a login member of `trs_app`, subject to row-level security). Optional until
-   * the first route reads the database (BE-01.3).
-   */
-  DATABASE_URL: postgresUrl.optional(),
+  /** Application role (a login member of `trs_app`, subject to row-level security). */
+  DATABASE_URL: postgresUrl,
   /** Owner role, used only by `db:migrate`; never given to the running API. */
   DATABASE_MIGRATION_URL: postgresUrl.optional(),
+  /** Signs and encrypts session cookies and tokens. At least 32 characters, random per environment. */
+  BETTER_AUTH_SECRET: z.string().min(32, "Must be at least 32 characters"),
+  /** Public URL of this API (scheme, host, optional port); auth links and cookies are built on it. */
+  BETTER_AUTH_URL: z.url({ protocol: /^https?$/, error: "Must be an http(s) URL" }),
+  /** Public URL of the web app: trusted origin for auth requests and base of e-mail links. */
+  WEB_URL: z.url({ protocol: /^https?$/, error: "Must be an http(s) URL" }).optional(),
 })
 
 export type Config = z.output<typeof configSchema>
@@ -24,15 +27,24 @@ export class ConfigError extends Error {
   override name = "ConfigError"
 }
 
-/**
- * Reads and validates the environment once, at start-up. An invalid value stops the process with
- * the variable name and the reason, never the value (it may be a secret).
- */
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const result = configSchema.safeParse(env)
+function parse<T extends z.ZodType>(schema: T, env: NodeJS.ProcessEnv): z.output<T> {
+  const result = schema.safeParse(env)
   if (!result.success) {
     const problems = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`)
     throw new ConfigError(`Invalid configuration:\n- ${problems.join("\n- ")}`)
   }
   return result.data
+}
+
+/**
+ * Reads and validates the environment once, at start-up. An invalid value stops the process with
+ * the variable name and the reason, never the value (it may be a secret).
+ */
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+  return parse(configSchema, env)
+}
+
+/** Only what `db:migrate` needs, so the deploy pipeline does not hold the API's secrets. */
+export function loadMigrationConfig(env: NodeJS.ProcessEnv = process.env) {
+  return parse(configSchema.pick({ DATABASE_MIGRATION_URL: true }), env)
 }

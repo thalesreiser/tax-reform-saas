@@ -14,7 +14,9 @@
     "db:migrate": "node dist/db/migrate-cli.js"
   },
   "dependencies": {
+    "@fastify/rate-limit": "catalog:",
     "@fastify/swagger": "catalog:",
+    "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "fastify": "catalog:",
     "fastify-type-provider-zod": "catalog:",

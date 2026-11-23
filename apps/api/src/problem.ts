@@ -11,6 +11,8 @@ export const problemSchema = z.object({
   title: z.string(),
   status: z.number().int(),
   detail: z.string().optional(),
+  /** Machine-readable reason (e.g. better-auth's `INVALID_EMAIL_OR_PASSWORD`). */
+  code: z.string().optional(),
   requestId: z.string(),
   errors: z
     .array(
@@ -36,6 +38,7 @@ export function problem(
     status,
     requestId: request.id,
     ...(fields.detail === undefined ? {} : { detail: fields.detail }),
+    ...(fields.code === undefined ? {} : { code: fields.code }),
     ...(fields.errors === undefined ? {} : { errors: fields.errors }),
   }
 }
