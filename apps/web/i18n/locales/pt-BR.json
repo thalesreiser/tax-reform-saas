@@ -1,0 +1,20 @@
+{
+  "layout": {
+    "skipToContent": "Pular para o conteúdo principal",
+    "footer": "© {year} {appName}"
+  },
+  "home": {
+    "description": "Em construção."
+  },
+  "error": {
+    "notFound": {
+      "title": "Página não encontrada",
+      "description": "O endereço acessado não existe ou foi movido."
+    },
+    "generic": {
+      "title": "Algo deu errado",
+      "description": "Ocorreu um erro inesperado. Tente novamente em instantes."
+    },
+    "backHome": "Voltar para a página inicial"
+  }
+}
