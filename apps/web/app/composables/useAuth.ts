@@ -28,11 +28,11 @@ export function useAuth() {
   return {
     session,
     refreshSession,
-    async signIn(body: { email: string; password: string }) {
+    signIn: async (body: { email: string; password: string }) => {
       await post("/api/auth/sign-in/email", body)
       return refreshSession()
     },
-    async signOut() {
+    signOut: async () => {
       await post("/api/auth/sign-out", {})
       session.value = null
     },
@@ -49,7 +49,7 @@ export function useAuth() {
       api<Invitation>("/api/auth/organization/get-invitation", { query: { id } }),
     acceptInvitation: (invitationId: string) =>
       post("/api/auth/organization/accept-invitation", { invitationId }),
-    createOffice(name: string) {
+    createOffice: (name: string) => {
       const suffix = Array.from(crypto.getRandomValues(new Uint8Array(3)), (b) =>
         b.toString(16).padStart(2, "0"),
       ).join("")
