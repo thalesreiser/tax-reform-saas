@@ -179,6 +179,27 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # The typed client against the running containers (MOT-01.3): no second set of engines to start.
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check that the generated client matches the OpenAPI documents
+        run: |
+          pnpm --filter @trs/engine-client generate
+          git diff --exit-code -- packages/engine-client/src/generated
+
+      - name: Engine client against the engines
+        env:
+          ENGINE_REGIME_REGULAR_URL: http://127.0.0.1:8080
+          ENGINE_SIMPLES_NACIONAL_URL: http://127.0.0.1:8082
+        run: |
+          pnpm --filter "@trs/engine-client^..." build
+          pnpm --filter @trs/engine-client test:engines
+
       - name: Write the results to the job summary
         if: always()
         run: |
