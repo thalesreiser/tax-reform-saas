@@ -52,7 +52,11 @@ function newPassword(t: Translate) {
 }
 
 function name(t: Translate, key: string) {
-  return z.string().trim().min(1, t(key)).max(NAME_MAX_LENGTH, t("auth.validation.tooLong"))
+  return z
+    .string({ error: t(key) })
+    .trim()
+    .min(1, t(key))
+    .max(NAME_MAX_LENGTH, t("auth.validation.tooLong"))
 }
 
 export const signInSchema = (t: Translate) =>
