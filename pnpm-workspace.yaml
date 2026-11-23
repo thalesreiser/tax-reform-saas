@@ -1,0 +1,26 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# One version per dependency for the whole monorepo; packages reference it as "catalog:".
+catalog:
+  "@commitlint/cli": 21.2.4
+  "@commitlint/config-conventional": 21.2.4
+  "@eslint/js": 10.0.1
+  "@types/node": 24.19.2
+  eslint: 10.14.0
+  eslint-config-prettier: 10.1.8
+  globals: 17.14.0
+  husky: 9.1.7
+  lint-staged: 17.6.0
+  prettier: 3.9.10
+  turbo: 2.11.10
+  typescript: 5.9.3
+  typescript-eslint: 8.72.1
+  vitest: 5.1.0
+
+engineStrict: true
+
+# Packages allowed to run install scripts (pnpm 10 blocks them by default).
+onlyBuiltDependencies:
+  - esbuild
