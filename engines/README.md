@@ -33,7 +33,7 @@ Swagger: `/api/swagger-ui.html` on each HTTP port.
    Maven and all dependencies from Maven Central, so the build needs internet access.
 4. Starts the jar with `-Dspring.profiles.active=offline` from the checkout root (the profile reads
    `./calculadora/db`), waits for `/health`, posts the fixture and checks the expected values, with
-   default JVM options and with the 512 MB container sizing.
+   default JVM options and with two 512 MB container sizings (see ADR 004).
 5. Writes build time, start-up time and memory to the job summary and uploads the jar, the database
    and the logs as artifacts.
 
