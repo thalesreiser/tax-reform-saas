@@ -17,7 +17,6 @@ permissions:
 env:
   TURBO_TELEMETRY_DISABLED: "1"
 
-# Minimal pipeline from EST-01.2; EST-02.1 adds build, integration tests and required checks.
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -29,8 +28,74 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+      - uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.job }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-${{ github.job }}-${{ hashFiles('pnpm-lock.yaml') }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.job }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-${{ github.job }}-${{ hashFiles('pnpm-lock.yaml') }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  # Database-backed tests (`test:integration` scripts). The first ones arrive with BE-01.2; until then
+  # Turborepo finds no task and the job only proves the database service starts.
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: trs_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/trs_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:integration
+
+  # Single required check for branch protection: new jobs only need to be listed here.
+  ci-ok:
+    if: always()
+    needs: [quality, build, integration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: All CI jobs passed
+        run: |
+          echo '${{ toJSON(needs) }}'
+          test "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "false"
