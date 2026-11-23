@@ -1,0 +1,55 @@
+{
+  "oper": { "data": "2027-03-15", "tpDoc": "55", "CRT": "1", "regimeApuracao": "SN_PLENO" },
+  "resolucaoAliquotas": {
+    "fatorR": true,
+    "indSublimite": false,
+    "itens": [
+      {
+        "numero": 1,
+        "cAtivSN": "01",
+        "anexoAplicado": "I",
+        "tipoAliquota": "PAR_UNICO",
+        "regraAliquota": "ANEXO_SEM_ISS",
+        "pIBSSN": "0.0129",
+        "pCBSSN": "1.1612",
+        "motivo": "RESOLVIDA",
+        "avisos": []
+      }
+    ],
+    "avisos": []
+  },
+  "objetos": [
+    {
+      "nObj": 1,
+      "estadoItem": "CALCULADO",
+      "tribCalc": {
+        "vRBSNitem": "1000.00",
+        "tpRBSN": 1,
+        "tpRBSNDescricao": "Receita bruta - interna",
+        "vBC": "1000.00",
+        "pIBSSN": "0.0129",
+        "vIBSSN": "0.13",
+        "vIBSPendSusp": "0.00",
+        "pCBSSN": "1.1612",
+        "vCBSSN": "11.61",
+        "vCBSPendSusp": "0.00",
+        "IS": { "valor": "0.00" },
+        "totalItem": "11.74",
+        "memoriaCalculo": {
+          "cbs": "Receita bruta do Simples Nacional de R$ 1.000,00 (Receita bruta - interna). A base de cálculo utilizada é de R$ 1.000,00, com alíquota efetiva de 1,1612%. Valor devido de R$ 11,61 e pendente/suspenso de R$ 0,00.",
+          "ibs": "Receita bruta do Simples Nacional de R$ 1.000,00 (Receita bruta - interna). A base de cálculo utilizada é de R$ 1.000,00, com alíquota efetiva de 0,0129%. Valor devido de R$ 0,13 e pendente/suspenso de R$ 0,00."
+        }
+      }
+    }
+  ],
+  "total": {
+    "vRBSNtot": "1000.00",
+    "vBC": "1000.00",
+    "vIBSSNtot": "0.13",
+    "vIBSSNtotPendSusp": "0.00",
+    "vCBSSNtot": "11.61",
+    "vCBSSNtotPendSusp": "0.00",
+    "totalIs": "0.00",
+    "totalTributos": "11.74"
+  }
+}
