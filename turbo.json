@@ -18,7 +18,7 @@
     "test:integration": {
       "dependsOn": ["^build"],
       "cache": false,
-      "passThroughEnv": ["DATABASE_URL"]
+      "passThroughEnv": ["DATABASE_URL", "DATABASE_MIGRATION_URL"]
     },
     "dev": {
       "dependsOn": ["^build"],
