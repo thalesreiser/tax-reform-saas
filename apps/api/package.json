@@ -1,0 +1,27 @@
+{
+  "name": "@trs/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/swagger": "catalog:",
+    "fastify": "catalog:",
+    "fastify-type-provider-zod": "catalog:",
+    "openapi-types": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@trs/eslint-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
