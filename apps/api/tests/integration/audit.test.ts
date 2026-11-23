@@ -43,9 +43,10 @@ const eventsOf = (officeId: string) =>
   withOffice(db.app, officeId, (tx) => tx.select().from(auditEvents))
 
 async function adminEvents(resourceId: string) {
-  const res = await db.admin.query("select * from audit_events where resource_id = $1", [
-    resourceId,
-  ])
+  const res = await db.admin.query<Record<string, unknown>>(
+    "select * from audit_events where resource_id = $1",
+    [resourceId],
+  )
   return res.rows
 }
 

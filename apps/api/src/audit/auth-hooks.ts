@@ -5,15 +5,15 @@ import { type Db, authDatabase, withOffice } from "../db/client.js"
 import { authRequestContext } from "./context.js"
 import { OFFICE_FIELDS, type AuditRecord, recordAudit } from "./events.js"
 
-interface Ref {
+export interface Ref {
   id: string
 }
-interface MemberRef extends Ref {
+export interface MemberRef extends Ref {
   organizationId: string
   userId: string
   role: string
 }
-interface InvitationRef extends Ref {
+export interface InvitationRef extends Ref {
   role: string
 }
 
