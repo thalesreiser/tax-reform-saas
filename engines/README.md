@@ -67,7 +67,7 @@ docker compose -f engines/compose.yml --env-file engines/versions.env up --detac
 ```
 
 `compose.yml` gives each engine a real limit of **768 MB without swap**, a read-only root file
-system with a 64 MB `/tmp` tmpfs, no capabilities, and the internal network `trs-engines`: no
+system with a 64 MB `/tmp` tmpfs (mounted `exec`: the SQLite driver loads its native library from it), no capabilities, and the internal network `trs-engines`: no
 published ports (Swagger stays private) and no internet access. Our API joins that network and calls
 `http://regime-regular:8080` and `http://simples-nacional:8082`. CI adds `compose.ci.yml`, which
 publishes the ports on the runner's loopback only, then runs `scripts/container-smoke.sh` (version

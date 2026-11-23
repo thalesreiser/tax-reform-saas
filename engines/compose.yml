@@ -8,9 +8,10 @@ x-engine: &engine
   mem_limit: 768m
   memswap_limit: 768m
   read_only: true
-  # The SQLite driver extracts its native library here; tmpfs counts towards the memory limit.
+  # The SQLite driver extracts its native library here and loads it, so the tmpfs needs "exec"
+  # (Docker mounts tmpfs noexec by default). tmpfs counts towards the memory limit.
   tmpfs:
-    - /tmp:size=64m
+    - /tmp:size=64m,exec
   cap_drop: [ALL]
   security_opt: [no-new-privileges:true]
   restart: unless-stopped
