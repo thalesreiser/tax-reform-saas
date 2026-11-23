@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+const postgresUrl = z.url({ protocol: /^postgres(ql)?$/, error: "Must be a postgres:// URL" })
+
 const configSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   HOST: z.string().min(1).default("0.0.0.0"),
@@ -7,6 +9,13 @@ const configSchema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   /** Set by the deploy pipeline (git tag or commit); shown by /health. */
   APP_VERSION: z.string().min(1).default("dev"),
+  /**
+   * Application role (a login member of `trs_app`, subject to row-level security). Optional until
+   * the first route reads the database (BE-01.3).
+   */
+  DATABASE_URL: postgresUrl.optional(),
+  /** Owner role, used only by `db:migrate`; never given to the running API. */
+  DATABASE_MIGRATION_URL: postgresUrl.optional(),
 })
 
 export type Config = z.output<typeof configSchema>

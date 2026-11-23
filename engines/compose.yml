@@ -1,0 +1,39 @@
+# Official engines for CI and staging (MOT-01.2, ADR 004). Images and tags come from versions.env:
+#   docker compose -f engines/compose.yml --env-file engines/versions.env up --detach --wait
+# The network is internal: no published ports (Swagger stays private) and no egress. Our API joins
+# the "trs-engines" network to reach http://regime-regular:8080 and http://simples-nacional:8082.
+
+# Real cgroup limit without swap: the JVM sizes its heap from it (75 %, ADR 004).
+x-engine: &engine
+  mem_limit: 768m
+  memswap_limit: 768m
+  read_only: true
+  # The SQLite driver extracts its native library here and loads it, so the tmpfs needs "exec"
+  # (Docker mounts tmpfs noexec by default). tmpfs counts towards the memory limit.
+  tmpfs:
+    - /tmp:size=64m,exec
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  restart: unless-stopped
+  networks: [engines]
+  healthcheck:
+    test: ["CMD", "engine-healthcheck"]
+    interval: 15s
+    timeout: 5s
+    start_period: 90s
+    start_interval: 3s
+    retries: 3
+
+services:
+  regime-regular:
+    <<: *engine
+    image: ghcr.io/thalesreiser/trs-engine-regime-regular:${REGIME_REGULAR_TAG:?set by versions.env}
+
+  simples-nacional:
+    <<: *engine
+    image: ghcr.io/thalesreiser/trs-engine-simples-nacional:${SIMPLES_NACIONAL_TAG:?set by versions.env}
+
+networks:
+  engines:
+    name: trs-engines
+    internal: true

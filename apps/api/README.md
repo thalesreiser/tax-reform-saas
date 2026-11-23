@@ -40,3 +40,45 @@ docker run --rm -p 3000:3000 -e APP_VERSION=local trs-api
 - **Health check:** `HEALTHCHECK` calls `GET /health` with Node's `fetch` (no curl in the image).
 - **CI:** `.github/workflows/image.yml` builds the image, checks the non-root user, smoke-tests
   `/health` and scans it with Trivy, failing on any critical vulnerability.
+
+## Database
+
+Postgres (Neon in production) through Drizzle ORM on `pg`. Schema: `src/db/schema.ts`; migrations:
+`drizzle/` (SQL, committed).
+
+| Command                              | What it does                                                         |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| `pnpm --filter @trs/api db:generate` | Writes a migration from the schema diff (no database needed)         |
+| `pnpm --filter @trs/api db:migrate`  | Applies pending migrations with `DATABASE_MIGRATION_URL` (built API) |
+| `pnpm test:integration`              | Database suite; needs a superuser `DATABASE_URL` (CI provides one)   |
+
+### Tenancy and row-level security (RNF-02)
+
+- **Tenant:** `offices`. Every tenant-scoped table has an `office_id` referencing it.
+- **Two roles.** The migrations run as the owner (`DATABASE_MIGRATION_URL`). The API connects with
+  `DATABASE_URL` as a login user that is a member of `trs_app`, a role created by the migrations
+  that is never superuser, never `BYPASSRLS` and owns no table. Each environment creates its login
+  user once: `CREATE ROLE trs_api LOGIN PASSWORD '...' IN ROLE trs_app;`.
+- **Policies.** Each tenant table has `ENABLE` and `FORCE ROW LEVEL SECURITY` and a policy
+  `office_id = app_current_office_id()` for both reading (`USING`) and writing (`WITH CHECK`).
+  `app_current_office_id()` reads the transaction-local setting `app.office_id`; when it is not set
+  it is `NULL`, so a query without an office reads zero rows and every write is rejected.
+- **`withOffice(db, officeId, fn)`** (`src/db/client.ts`) is the only query path: it validates the
+  id, opens a transaction, binds it with `set_config('app.office_id', $1, true)` and runs `fn`. The
+  setting ends with the transaction, so a pooled connection never carries an office to the next
+  request. `createDb()` returns an opaque handle that exposes nothing else.
+- **Superusers and `BYPASSRLS` roles ignore policies.** Never give such a role to the API; owner
+  data fixes in a migration see zero rows unless they run as a superuser.
+- Never use `drizzle-kit push`: it does not know about the hand-written policies.
+
+### Adding a tenant table
+
+1. Add the table to `src/db/schema.ts` with `officeId: uuid("office_id").notNull().references(() =>
+offices.id)`.
+2. `pnpm --filter @trs/api db:generate` for the table, then
+   `pnpm --filter @trs/api db:generate --custom --name <table>_rls` and write in it (see
+   `drizzle/0001_office_rls.sql`): `ENABLE` and `FORCE ROW LEVEL SECURITY`, the `office_isolation`
+   policy and the `GRANT` of only the privileges the API needs to `trs_app`.
+3. Add isolation cases to `tests/integration/`. The suite fails while any table in `public` lacks a
+   forced policy; a table that is deliberately not tenant-scoped (e.g. better-auth's users) goes in
+   `NON_TENANT_TABLES` there, with a reason.

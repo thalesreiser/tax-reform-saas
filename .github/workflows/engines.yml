@@ -55,24 +55,7 @@ jobs:
         run: grep -E '^[A-Z_]+=' engines/versions.env >> "$GITHUB_OUTPUT"
 
       - name: Check that the pinned tags still point to the pinned commits
-        env:
-          RR_REPO: ${{ steps.pins.outputs.REGIME_REGULAR_REPO }}
-          RR_TAG: ${{ steps.pins.outputs.REGIME_REGULAR_TAG }}
-          RR_SHA: ${{ steps.pins.outputs.REGIME_REGULAR_SHA }}
-          SN_REPO: ${{ steps.pins.outputs.SIMPLES_NACIONAL_REPO }}
-          SN_TAG: ${{ steps.pins.outputs.SIMPLES_NACIONAL_TAG }}
-          SN_SHA: ${{ steps.pins.outputs.SIMPLES_NACIONAL_SHA }}
-        run: |
-          check() {
-            # For an annotated tag the peeled line (^{}) holds the commit; it is listed last.
-            actual=$(git ls-remote --tags "https://github.com/$1.git" "refs/tags/$2" "refs/tags/$2^{}" | tail -n 1 | cut -f 1)
-            if [[ $actual != "$3" ]]; then
-              echo "::error::$1 tag $2 points to ${actual:-nothing}, expected $3"
-              exit 1
-            fi
-          }
-          check "$RR_REPO" "$RR_TAG" "$RR_SHA"
-          check "$SN_REPO" "$SN_TAG" "$SN_SHA"
+        run: engines/scripts/check-pins.sh
 
       # The Simples engine has no Flyway scripts of its own: upstream tells us to use the ones in the
       # regime-regular repository, so the database is always generated from that checkout.
