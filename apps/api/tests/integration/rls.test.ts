@@ -211,7 +211,7 @@ describe("every table in the public schema", () => {
         where n.nspname = 'public' and c.relkind in ('r', 'p') order by c.relname`,
     )
     const names = tables.rows.map((t) => t.name)
-    expect(names).toEqual(expect.arrayContaining(["clients", "offices"]))
+    expect(names).toEqual(expect.arrayContaining(["audit_events", "clients", "offices"]))
     const unprotected = tables.rows
       .filter((t) => !NON_TENANT_TABLES.includes(t.name))
       .filter((t) => !t.rls || !t.forced || t.policies === 0)

@@ -14,6 +14,7 @@ import { registerAuth } from "./auth/plugin.js"
 import type { Config } from "./config.js"
 import { createDb } from "./db/client.js"
 import { errorHandler, problem, sendProblem } from "./problem.js"
+import { auditRoutes } from "./routes/audit.js"
 import { healthRoutes } from "./routes/health.js"
 import { officeRoutes } from "./routes/office.js"
 
@@ -84,6 +85,7 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
 
   await app.register(healthRoutes, { version: config.APP_VERSION })
   await app.register(officeRoutes, { db })
+  await app.register(auditRoutes, { db })
 
   app.get("/openapi.json", { schema: { hide: true } }, () => app.swagger())
 

@@ -1,4 +1,16 @@
-import { char, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
+import {
+  char,
+  check,
+  index,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core"
 import { authOrganizations } from "./auth-schema.js"
 
 export * from "./auth-schema.js"
@@ -37,4 +49,72 @@ export const clients = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [unique("clients_office_id_cnpj_key").on(t.officeId, t.cnpj)],
+)
+
+/**
+ * Audited actions (RF-18). Adding one: append it here (`db:generate` writes `ALTER TYPE ... ADD
+ * VALUE`) and give it a metadata schema in src/audit/events.ts.
+ */
+export const AUDIT_ACTIONS = [
+  "office.created",
+  "office.updated",
+  "member.invited",
+  "member.invitation_canceled",
+  "member.invitation_rejected",
+  "member.joined",
+  "member.role_changed",
+  "member.removed",
+  "member.left",
+  "client.created",
+  "client.updated",
+  "client.deleted",
+] as const
+export type AuditAction = (typeof AUDIT_ACTIONS)[number]
+
+export const AUDIT_RESOURCE_TYPES = ["office", "invitation", "member", "client"] as const
+export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number]
+
+export const auditAction = pgEnum("audit_action", AUDIT_ACTIONS)
+export const auditResourceType = pgEnum("audit_resource_type", AUDIT_RESOURCE_TYPES)
+
+/**
+ * Append-only audit log of an office (RF-18). Written only through `recordAudit()`; the API role
+ * may insert and read, never update or delete, and a trigger rejects changes even for the owner
+ * (0005_audit_events_rls.sql). `metadata` holds ids, roles and field names only, never personal or
+ * fiscal data (allow-list per action in src/audit/events.ts). `actor_user_id` has no foreign key on
+ * purpose: deleting a user must not rewrite the log.
+ */
+export const auditEvents = pgTable(
+  "audit_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => offices.id),
+    /** NULL for actions taken by the system. */
+    actorUserId: uuid("actor_user_id"),
+    /** The actor's role in the office when the action happened, if it had one. */
+    actorRole: text("actor_role"),
+    action: auditAction("action").notNull(),
+    resourceType: auditResourceType("resource_type").notNull(),
+    resourceId: uuid("resource_id").notNull(),
+    /** Millisecond precision, so a JavaScript Date round-trips exactly (pagination cursor). */
+    occurredAt: timestamp("occurred_at", { withTimezone: true, precision: 3 })
+      .notNull()
+      .defaultNow(),
+    /** `x-request-id` of the request that caused the action. */
+    requestId: uuid("request_id"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  },
+  (t) => [
+    index("audit_events_office_id_occurred_at_idx").on(
+      t.officeId,
+      t.occurredAt.desc(),
+      t.id.desc(),
+    ),
+    check(
+      "audit_events_metadata_check",
+      sql`jsonb_typeof(${t.metadata}) = 'object' and octet_length(${t.metadata}::text) <= 1024`,
+    ),
+  ],
 )

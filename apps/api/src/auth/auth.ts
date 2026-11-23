@@ -4,6 +4,7 @@ import { APIError } from "better-auth/api"
 import { organization } from "better-auth/plugins/organization"
 import { asc, eq } from "drizzle-orm"
 import type { FastifyBaseLogger } from "fastify"
+import { createAuditHooks } from "../audit/auth-hooks.js"
 import type { Config } from "../config.js"
 import { authSchema, authMembers } from "../db/auth-schema.js"
 import { type Db, authDatabase } from "../db/client.js"
@@ -38,6 +39,7 @@ function rejectUnknownRole(role: unknown): void {
 export function createAuth({ config, db, mailer, log }: AuthDeps) {
   const database = authDatabase(db)
   const webUrl = config.WEB_URL ?? config.BETTER_AUTH_URL
+  const audit = createAuditHooks(db).organizationHooks
 
   return betterAuth({
     appName: "Reforma Tributária",
@@ -109,6 +111,8 @@ export function createAuth({ config, db, mailer, log }: AuthDeps) {
             }),
           ),
         organizationHooks: {
+          // Audit log (RF-18): office, member and invitation actions.
+          ...audit,
           // better-auth also accepts its default roles (admin, member): only ours are assignable.
           beforeCreateInvitation: ({ invitation }) => {
             rejectUnknownRole(invitation.role)
