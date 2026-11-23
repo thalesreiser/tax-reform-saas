@@ -13,19 +13,23 @@ useHead({
   <div class="flex min-h-dvh flex-col">
     <a
       href="#conteudo"
-      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-default focus:px-4 focus:py-2 focus:ring-2 focus:ring-primary"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded-md focus:bg-default focus:px-4 focus:py-2 focus:font-medium focus:text-highlighted focus:shadow-glass focus:ring-2 focus:ring-primary"
     >
       {{ t("layout.skipToContent") }}
     </a>
 
-    <UHeader :title="appName" to="/" :toggle="false" />
+    <UHeader :title="appName" to="/" :toggle="false">
+      <template #title>
+        <AppWordmark />
+      </template>
+    </UHeader>
 
     <UMain id="conteudo" tabindex="-1" class="flex-1 focus:outline-none">
       <slot />
     </UMain>
 
-    <UFooter>
-      <p class="text-sm text-muted">{{ t("layout.footer", { appName, year }) }}</p>
+    <UFooter class="border-t border-default">
+      <p class="text-sm text-muted tabular-nums">{{ t("layout.footer", { appName, year }) }}</p>
     </UFooter>
   </div>
 </template>

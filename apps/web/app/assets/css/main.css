@@ -1,2 +1,239 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/*
+ * Aurora visual direction (ADR 006). Hex values only, so test/unit/contrast.test.ts can read this
+ * file and check every text/background pair against WCAG 2.1 AA.
+ * Palettes are mapped to Nuxt UI's semantic colours in app/theme/aurora.ts.
+ */
+@theme static {
+  --font-sans: "Outfit Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* Violet: primary. 500 is the brand violet. */
+  --color-iris-50: #f3f0ff;
+  --color-iris-100: #e9e3ff;
+  --color-iris-200: #d5caff;
+  --color-iris-300: #b8a5ff;
+  --color-iris-400: #9a7dff;
+  --color-iris-500: #6d4aff;
+  --color-iris-600: #5a35eb;
+  --color-iris-700: #4a27c7;
+  --color-iris-800: #3d22a0;
+  --color-iris-900: #331f7f;
+  --color-iris-950: #1f1250;
+
+  /* Blue: secondary and info. 500 is the brand blue (decorative only: 2.55:1 under white text). */
+  --color-azure-50: #eef7ff;
+  --color-azure-100: #d9edff;
+  --color-azure-200: #bce0ff;
+  --color-azure-300: #8ecdff;
+  --color-azure-400: #5cb6ff;
+  --color-azure-500: #3aa8ff;
+  --color-azure-600: #1f6fd1;
+  --color-azure-700: #1a5cb0;
+  --color-azure-800: #1a4c8f;
+  --color-azure-900: #1b4174;
+  --color-azure-950: #13294a;
+
+  /* Mint: success and gains. 400 is the brand mint. */
+  --color-mint-50: #ecfdf7;
+  --color-mint-100: #d1faec;
+  --color-mint-200: #a6f3d9;
+  --color-mint-300: #6be6c2;
+  --color-mint-400: #2dd4a7;
+  --color-mint-500: #14b88d;
+  --color-mint-600: #0e8f6e;
+  --color-mint-700: #0b7259;
+  --color-mint-800: #0c5b48;
+  --color-mint-900: #0b4b3c;
+  --color-mint-950: #042b22;
+
+  /* Orange: warning and tax increases. */
+  --color-ember-50: #fff7ed;
+  --color-ember-100: #ffedd5;
+  --color-ember-200: #fed7aa;
+  --color-ember-300: #fdba74;
+  --color-ember-400: #fb923c;
+  --color-ember-500: #f97316;
+  --color-ember-600: #ea580c;
+  --color-ember-700: #b23c0b;
+  --color-ember-800: #9a3412;
+  --color-ember-900: #7c2d12;
+  --color-ember-950: #431407;
+
+  /* Red: errors. */
+  --color-ruby-50: #fef2f2;
+  --color-ruby-100: #fee2e2;
+  --color-ruby-200: #fecaca;
+  --color-ruby-300: #fca5a5;
+  --color-ruby-400: #f87171;
+  --color-ruby-500: #ef4444;
+  --color-ruby-600: #dc2626;
+  --color-ruby-700: #b91c1c;
+  --color-ruby-800: #991b1b;
+  --color-ruby-900: #7f1d1d;
+  --color-ruby-950: #450a0a;
+
+  /* Indigo grey: neutral. 500 is the muted text, 900 the foreground, 950 the dark page. */
+  --color-dusk-50: #f6f6fc;
+  --color-dusk-100: #ececf7;
+  --color-dusk-200: #dcdcee;
+  --color-dusk-300: #c0c0dc;
+  --color-dusk-400: #9494b8;
+  --color-dusk-500: #62628a;
+  --color-dusk-600: #4e4e74;
+  --color-dusk-700: #3a3960;
+  --color-dusk-800: #2a2950;
+  --color-dusk-900: #1c1b3a;
+  --color-dusk-950: #0d0b26;
+
+  --shadow-glass: 0 8px 24px rgb(76 64 180 / 0.1);
+}
+
+/*
+ * Semantic tokens. Unlayered, so they win over Nuxt UI's `@layer theme` defaults; `.dark` comes
+ * after `:root` because both match <html> in dark mode.
+ * Text colours sit on the pale gradient, so light mode uses the darker 700 shades for every
+ * semantic colour except the brand violet.
+ */
+:root {
+  --ui-radius: 0.5rem;
+
+  --ui-primary: var(--ui-color-primary-500);
+  --ui-secondary: var(--ui-color-secondary-700);
+  --ui-success: var(--ui-color-success-700);
+  --ui-info: var(--ui-color-info-700);
+  --ui-warning: var(--ui-color-warning-700);
+  --ui-error: var(--ui-color-error-700);
+
+  --ui-text: var(--ui-color-neutral-700);
+  --ui-text-muted: var(--ui-color-neutral-500);
+  --ui-text-highlighted: var(--ui-color-neutral-900);
+  --ui-text-inverted: #ffffff;
+  --ui-bg: #ffffff;
+  --ui-border: rgb(98 98 138 / 0.18);
+  --ui-border-muted: rgb(98 98 138 / 0.18);
+
+  /* Page background: linear-gradient(135deg, from 0%, via 45%, to 100%). */
+  --aurora-page-from: #eef0ff;
+  --aurora-page-via: #f1f7ff;
+  --aurora-page-to: #e8fbf4;
+
+  /* Glass surface and its opaque fallback. */
+  --aurora-glass: rgb(255 255 255 / 0.66);
+  --aurora-glass-opaque: #ffffff;
+  --aurora-glass-border: rgb(255 255 255 / 0.9);
+  --aurora-glass-shadow: var(--shadow-glass);
+
+  /* Brand gradient. `to` is decorative; text sits only on the `-strong` variant. */
+  --aurora-brand-from: #6d4aff;
+  --aurora-brand-to: #3aa8ff;
+  --aurora-brand-strong-to: #1f6fd1;
+  --aurora-on-brand: #ffffff;
+
+  /* Pills for gains (tax goes down) and increases (tax goes up). */
+  --aurora-gain-text: var(--ui-color-success-700);
+  --aurora-gain-bg: rgb(45 212 167 / 0.18);
+  --aurora-increase-text: var(--ui-color-warning-700);
+  --aurora-increase-bg: rgb(251 146 60 / 0.18);
+}
+
+/* Dark mode proposal (pending Thales's approval, see ADR 006): deep indigo night with a faint glow. */
+.dark {
+  --ui-primary: var(--ui-color-primary-400);
+  --ui-secondary: var(--ui-color-secondary-400);
+  --ui-success: var(--ui-color-success-400);
+  --ui-info: var(--ui-color-info-400);
+  --ui-warning: var(--ui-color-warning-400);
+  --ui-error: var(--ui-color-error-400);
+
+  --ui-text: var(--ui-color-neutral-200);
+  --ui-text-muted: var(--ui-color-neutral-400);
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: var(--ui-color-neutral-900);
+  --ui-bg: var(--ui-color-neutral-900);
+  --ui-border: rgb(255 255 255 / 0.08);
+  --ui-border-muted: rgb(255 255 255 / 0.08);
+
+  --aurora-page-from: #221956;
+  --aurora-page-via: #0d0b26;
+  --aurora-page-to: #112335;
+
+  --aurora-glass: rgb(28 27 58 / 0.6);
+  --aurora-glass-opaque: #1c1b3a;
+  --aurora-glass-border: rgb(255 255 255 / 0.08);
+  --aurora-glass-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+
+  --aurora-gain-text: var(--ui-color-success-400);
+  --aurora-gain-bg: rgb(45 212 167 / 0.16);
+  --aurora-increase-text: var(--ui-color-warning-400);
+  --aurora-increase-bg: rgb(251 146 60 / 0.16);
+}
+
+body {
+  background-color: var(--aurora-page-via);
+  background-image: linear-gradient(
+    135deg,
+    var(--aurora-page-from) 0%,
+    var(--aurora-page-via) 45%,
+    var(--aurora-page-to) 100%
+  );
+}
+
+/* Translucent card. Opaque when blur is unsupported or the user asks for less transparency. */
+@utility surface-glass {
+  background-color: var(--aurora-glass-opaque);
+  border: 1px solid var(--aurora-glass-border);
+  /* 16px with --ui-radius 0.5rem; controls (Nuxt UI rounded-md) get 12px. */
+  border-radius: calc(var(--ui-radius) * 2);
+  box-shadow: var(--aurora-glass-shadow);
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: var(--aurora-glass);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+      background-color: var(--aurora-glass-opaque);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+}
+
+/* Brand gradient: decorative (marks, accents) and strong (behind white text). */
+@utility bg-brand {
+  background-image: linear-gradient(140deg, var(--aurora-brand-from), var(--aurora-brand-to));
+}
+
+@utility bg-brand-strong {
+  background-image: linear-gradient(
+    140deg,
+    var(--aurora-brand-from),
+    var(--aurora-brand-strong-to)
+  );
+  color: var(--aurora-on-brand);
+}
+
+@utility pill-gain {
+  background-color: var(--aurora-gain-bg);
+  color: var(--aurora-gain-text);
+  border-radius: calc(infinity* 1px);
+}
+
+@utility pill-increase {
+  background-color: var(--aurora-increase-bg);
+  color: var(--aurora-increase-text);
+  border-radius: calc(infinity* 1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
