@@ -19,6 +19,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@trs/shared-types": "workspace:*",
     "decimal.js": "catalog:"
   },
   "devDependencies": {
