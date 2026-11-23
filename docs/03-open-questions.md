@@ -1,0 +1,30 @@
+# 03 - Open questions and decisions
+
+Questions (Q) need information; decisions (DEC) need a choice. Each answer that changes the plan
+ends in an ADR.
+
+## Open
+
+| ID | Question | Recommendation | Blocks |
+|---|---|---|---|
+| Q-01 | Product name and domain | — | NEG-01.1, FE-01.2, EXT-01.6 |
+| Q-02 | Pricing: per client company, per API call, or tiers combining both | Tiers by number of client companies, API calls included with overage | NEG-01.2, BE-04.1 |
+| Q-03 | How many hours per week are available for the project | — | Schedule |
+| Q-04 | Should the comparison include IRPJ, CSLL and CPP, or only consumption taxes | Only consumption taxes in the MVP; Simples DAS split to isolate them | MOT-02.2, MOT-03.2 |
+| Q-05 | ICMS-ST, DIFAL and state benefits stay out of the MVP | Yes, out; show a notice when the profile needs them | MOT-02.4 |
+| Q-06 | Partner accountant: availability per week, how golden cases are delivered, compensation | Spreadsheet of cases per regime, one review session per week | MOT-02.7, MOT-03.3 |
+| Q-07 | First web issuer for the extension | Emissor Nacional da NFS-e (public, standard, widely used) | EXT-01.1 |
+| Q-08 | API key per client company or per office | Per client company, created by the office | BE-03.1 |
+| DEC-01 | Hosting for the API and the JVM engines: VPS (Hetzner) or managed (Fly.io/Railway) | VPS with docker compose for cost; managed if ops time is a concern | EST-03.1 |
+| DEC-02 | Repository visibility | Private, proprietary | EST-01.3 |
+| DEC-03 | Visual direction of the web app | Options presented at FE-01.2 | FE-01.2 |
+
+## Answered
+
+| ID | Answer | Date | ADR |
+|---|---|---|---|
+| — | Stack approved (TypeScript monorepo, official engines as sidecars) | 2026-11-23 | [001](adr/001-stack.md) |
+| — | Plugin = public API + SDK and browser extension | 2026-11-23 | [001](adr/001-stack.md) |
+| — | Simulator = current vs reform, 2026-2033 | 2026-11-23 | — |
+| — | Customer = accounting offices | 2026-11-23 | — |
+| — | Thales has a partner accountant to validate rules | 2026-11-23 | — |
