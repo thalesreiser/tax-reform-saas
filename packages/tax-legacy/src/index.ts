@@ -1,6 +1,7 @@
 export * from "./decimal.js"
 export * from "./rule-table.js"
 export * from "./tax-amount.js"
+export * from "./ipi.js"
 export * from "./iss.js"
 export * from "./pis-cofins.js"
 export * from "./transition.js"
