@@ -3,7 +3,7 @@ import { dec, format } from "@trs/tax-legacy"
 import type { FastifyRequest } from "fastify"
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod"
 import { z } from "zod"
-import { PROFILE_FIELDS, recordAudit } from "../audit/events.js"
+import { type PROFILE_FIELDS, recordAudit } from "../audit/events.js"
 import { auditContext } from "../audit/request.js"
 import { currentOffice } from "../auth/plugin.js"
 import {
@@ -15,8 +15,8 @@ import {
   UF_IBGE,
   fiscalProfileInputSchema,
   profileCompleteness,
-  purchaseLineSchema,
-  salesMixLineSchema,
+  type purchaseLineSchema,
+  type salesMixLineSchema,
 } from "../clients/fiscal-profile.js"
 import { type Db, type OfficeTx, withOffice } from "../db/client.js"
 import {

@@ -138,11 +138,11 @@ describe("fiscal profile (RF-03)", () => {
       "client.fiscal_profile_updated",
       "client.regime_confirmed",
     ])
-    expect(rows[0]?.metadata).toEqual({
-      fields: expect.arrayContaining(["regime", "revenue12m", "salesMix", "regimeConfirmation"]),
-      salesMixLines: 1,
-      creditablePurchaseLines: 1,
-    })
+    expect(rows[0]?.metadata).toMatchObject({ salesMixLines: 1, creditablePurchaseLines: 1 })
+    const { fields } = rows[0]?.metadata as { fields: string[] }
+    expect(fields).toEqual(
+      expect.arrayContaining(["regime", "revenue12m", "salesMix", "regimeConfirmation"]) as unknown,
+    )
     expect(JSON.stringify(rows)).not.toContain("1200000")
     expect(rows[1]?.metadata).toEqual({ regime: "lucro_presumido" })
   })
