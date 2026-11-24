@@ -81,7 +81,8 @@ function emailOf(request: FastifyRequest): string | undefined {
 /** Hop-by-hop or body-framing headers: the body is re-serialised, so its length may differ. */
 const DROPPED_HEADERS = new Set(["connection", "content-length", "transfer-encoding"])
 
-function toHeaders(request: FastifyRequest): Headers {
+/** The request headers as Web `Headers`, for better-auth calls (`auth.api.*({ headers })`). */
+export function toHeaders(request: FastifyRequest): Headers {
   const headers = new Headers()
   for (const [name, value] of Object.entries(request.headers)) {
     if (value === undefined || DROPPED_HEADERS.has(name)) continue

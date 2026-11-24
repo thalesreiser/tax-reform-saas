@@ -16,6 +16,8 @@ share view and the public landing pages arrive here task by task (FE tracks).
 | `app/layouts/default.vue` | Base shell: skip link, header, main landmark, footer            |
 | `app/layouts/app.vue`     | Signed-in shell: header, sidebar navigation / drawer, main      |
 | `app/utils/dashboard.ts`  | Dashboard view model, navigation items, impact formatting       |
+| `app/utils/cnpj.ts`       | CNPJ mask and validation (web copy of the API rules)            |
+| `app/utils/clients.ts`    | Client shapes, form schema, client/lookup error -> message key  |
 | `app/pages/`              | File-based routes (`index.vue` is the placeholder home page)    |
 | `app/error.vue`           | Error page (404 and unexpected errors), rendered in the layout  |
 | `i18n/locales/pt-BR.json` | Every user-facing string                                        |
@@ -125,3 +127,24 @@ header, so pages and the `auth` middleware know the session before hydration. Co
 - **Tests:** `test/nuxt/dashboard.test.ts` mounts the components with the populated fixture
   (`test/nuxt/fixtures/dashboard.ts`, fictional data); the e2e suite checks the empty state,
   landmarks, disabled navigation and the menu toggle.
+
+## Clients (FE-02.2)
+
+| Route            | What it does                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| `/clientes`      | List with search (`?q=`, debounced 300 ms), pages (`?pagina=`), table or phone cards |
+| `/clientes/novo` | Form: CNPJ masked and validated as typed; a valid CNPJ calls `GET /v1/cnpj/:cnpj`    |
+| `/clientes/<id>` | Edit legal name, trade name and notes; delete with an in-page dialog (audited)       |
+
+- **Autofill:** a lookup fills the names and shows status, the regime the registry reported (MEI,
+  Simples Nacional or "Não informado pela fonte"; confirmed later in the fiscal profile) and the
+  fetch time. The client is created with `lookup: true` only after a successful lookup; on 404, 422,
+  502 or 504 the form stays open for manual entry (`lookup: false`). 429 asks the user to wait. A 409
+  searches the existing client and links to it.
+- **CNPJ rules:** `app/utils/cnpj.ts` copies `apps/api/src/clients/cnpj.ts` without zod;
+  `test/unit/cnpj.test.ts` uses the API's vectors, so a change on one side must be made on both.
+- **Focus and announcements:** the lookup status is an `aria-live` region; after a save or a delete
+  focus moves to the success notice. The delete notice travels in `useState`, never in the URL.
+- **Tests:** `test/nuxt/clients.test.ts` drives the form and the dialog with `useClients` mocked
+  (autofill, manual fallback, 429, 409, edit, delete); `test/e2e/auth.test.ts` renders the pages
+  against the mock API (list, search, empty state, form, edit, not found).

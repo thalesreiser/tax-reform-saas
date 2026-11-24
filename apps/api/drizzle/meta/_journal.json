@@ -57,6 +57,13 @@
       "when": 1795458986459,
       "tag": "0007_client_registry",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795458991459,
+      "tag": "0008_office_settings",
+      "breakpoints": true
     }
   ]
 }

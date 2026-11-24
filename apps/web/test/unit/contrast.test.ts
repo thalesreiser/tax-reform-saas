@@ -250,6 +250,25 @@ describe.each<Mode>(["light", "dark"])("Aurora tokens, %s mode", (mode) => {
     ).toBeGreaterThanOrEqual(3)
   })
 
+  // FE-02.2 pairs: client list and form.
+  it("delete actions: error text at rest and on its 10% ghost/outline hover tint", () => {
+    const error = color("--ui-error", mode)
+    const hovered = surfaces(mode).map((s) => over({ rgb: error.rgb, alpha: 0.1 }, s))
+    expect(worst(error.rgb, surfaces(mode))).toBeGreaterThanOrEqual(TEXT)
+    expect(worst(error.rgb, hovered)).toBeGreaterThanOrEqual(TEXT)
+  })
+
+  it("lookup failure message (warning) and registry details on a glass card", () => {
+    const page = gradient(["--aurora-page-from", "--aurora-page-via", "--aurora-page-to"], mode)
+    const cards = [
+      ...page.map((p) => over(color("--aurora-glass", mode), p)),
+      opaque("--aurora-glass-opaque", mode),
+    ]
+    for (const token of ["--ui-warning", "--ui-text-muted", "--ui-text-highlighted"]) {
+      expect(worst(opaque(token, mode), cards)).toBeGreaterThanOrEqual(TEXT)
+    }
+  })
+
   it("the password toggle icon (muted) reaches 3:1 on the input background", () => {
     const input = opaque("--ui-bg", mode)
     expect(contrast(opaque("--ui-text-muted", mode), input)).toBeGreaterThanOrEqual(3)

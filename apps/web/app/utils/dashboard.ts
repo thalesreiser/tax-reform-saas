@@ -5,7 +5,7 @@
 /** Signed-in navigation. `to: null` marks a page that does not exist yet ("Em breve"). */
 export const NAV_ITEMS = [
   { id: "dashboard", icon: "i-lucide-layout-dashboard", to: "/painel" },
-  { id: "clients", icon: "i-lucide-building-2", to: null },
+  { id: "clients", icon: "i-lucide-building-2", to: "/clientes" },
   { id: "simulations", icon: "i-lucide-chart-column", to: null },
   { id: "apiKeys", icon: "i-lucide-key-round", to: null },
   { id: "office", icon: "i-lucide-settings", to: null },
@@ -64,7 +64,7 @@ export function emptyDashboard(): DashboardView {
 export function onboardingSteps(view: DashboardView): OnboardingStep[] {
   const { clients, clientsWithProfile, simulations, members } = view.progress
   return [
-    { id: "client", done: clients > 0, to: null },
+    { id: "client", done: clients > 0, to: "/clientes/novo" },
     { id: "profile", done: clientsWithProfile > 0, to: null },
     { id: "simulation", done: simulations > 0, to: null },
     { id: "team", done: members > 1, to: null },
