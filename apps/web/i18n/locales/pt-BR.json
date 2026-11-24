@@ -5,6 +5,18 @@
     "signIn": "Entrar",
     "signUp": "Criar conta"
   },
+  "appShell": {
+    "navLabel": "Navegação principal",
+    "menuTitle": "Menu",
+    "soon": "Em breve",
+    "nav": {
+      "dashboard": "Painel",
+      "clients": "Clientes",
+      "simulations": "Simulações",
+      "apiKeys": "Chaves de API",
+      "office": "Escritório"
+    }
+  },
   "home": {
     "eyebrow": "Reforma tributária · 2026 a 2033",
     "title": "Mostre a cada cliente quanto a reforma tributária muda para ele",
@@ -139,9 +151,64 @@
       "apiCalls": "Chamadas à API",
       "apiCallsHint": "Nenhuma chamada neste mês"
     },
-    "start": "Cadastre o primeiro cliente para começar.",
-    "addClient": "Cadastrar cliente",
-    "soon": "Em breve",
+    "onboarding": {
+      "title": "Primeiros passos",
+      "description": "Siga estes passos para ver o impacto da reforma em toda a sua carteira.",
+      "progress": "{done} de {total} concluídos",
+      "done": "concluído",
+      "pending": "pendente",
+      "next": "Próximo passo",
+      "steps": {
+        "client": {
+          "title": "Cadastrar o primeiro cliente",
+          "description": "Informe o CNPJ e os dados básicos da empresa.",
+          "action": "Cadastrar cliente"
+        },
+        "profile": {
+          "title": "Completar o perfil fiscal",
+          "description": "Regime tributário, atividades e faturamento do cliente.",
+          "action": "Completar perfil"
+        },
+        "simulation": {
+          "title": "Rodar a primeira simulação",
+          "description": "Compare a carga atual com a da reforma, ano a ano, de 2026 a 2033.",
+          "action": "Simular"
+        },
+        "team": {
+          "title": "Convidar a equipe",
+          "description": "Dê acesso aos contadores do seu escritório.",
+          "action": "Convidar"
+        }
+      }
+    },
+    "portfolio": {
+      "title": "Impacto da reforma na carteira",
+      "empty": "Quando houver simulações, seus clientes aparecem aqui ordenados pelo impacto da reforma em 2033: quem ganha e quem perde mais.",
+      "caption": "Clientes ordenados pelo impacto da reforma em 2033",
+      "rank": "Posição",
+      "client": "Cliente",
+      "regime": "Regime",
+      "impact": "Variação da carga em 2033"
+    },
+    "recent": {
+      "title": "Últimas simulações",
+      "empty": "Nenhuma simulação ainda. As simulações que você rodar aparecem aqui.",
+      "caption": "Simulações mais recentes",
+      "client": "Cliente",
+      "date": "Data",
+      "impact": "Variação em 2033"
+    },
+    "impact": {
+      "gain": "redução da carga",
+      "increase": "aumento da carga",
+      "neutral": "sem variação"
+    },
+    "regimes": {
+      "simples": "Simples Nacional",
+      "presumido": "Lucro Presumido",
+      "real": "Lucro Real"
+    },
+    "estimate": "Estimativas com alíquotas de referência provisórias.",
     "createOffice": {
       "title": "Crie seu escritório",
       "description": "Dê um nome ao seu escritório para começar.",
