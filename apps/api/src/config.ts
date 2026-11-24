@@ -19,6 +19,19 @@ const configSchema = z.object({
   BETTER_AUTH_URL: z.url({ protocol: /^https?$/, error: "Must be an http(s) URL" }),
   /** Public URL of the web app: trusted origin for auth requests and base of e-mail links. */
   WEB_URL: z.url({ protocol: /^https?$/, error: "Must be an http(s) URL" }).optional(),
+  /**
+   * Reverse proxies in front of the API whose X-Forwarded-For entry is trusted for the client
+   * address (rate limits). 0 trusts none; 1 behind Fly.io's proxy, which appends the client address.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
+  /** Base URL of the official regime-regular engine (private network). */
+  ENGINE_REGIME_REGULAR_URL: z
+    .url({ protocol: /^https?$/, error: "Must be an http(s) URL" })
+    .optional(),
+  /** Base URL of the official Simples Nacional engine (private network). */
+  ENGINE_SIMPLES_NACIONAL_URL: z
+    .url({ protocol: /^https?$/, error: "Must be an http(s) URL" })
+    .optional(),
 })
 
 export type Config = z.output<typeof configSchema>

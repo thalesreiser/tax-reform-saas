@@ -35,10 +35,12 @@ export default defineNuxtConfig({
 
   typescript: {
     strict: true,
+    // Component tests run in the Nuxt runtime, so they type-check with the app.
+    tsConfig: { include: ["../test/nuxt/**/*"] },
     // Tooling files and tests run in Node, outside the app context.
     nodeTsConfig: {
       compilerOptions: { types: ["node"] },
-      include: ["../vitest.config.ts", "../test/**/*"],
+      include: ["../vitest.config.ts", "../test/unit/**/*", "../test/e2e/**/*"],
     },
   },
 })
