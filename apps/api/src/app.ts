@@ -44,7 +44,7 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
     genReqId: () => randomUUID(),
     requestIdHeader: false,
     // request.ip is the rate-limit key: only the configured proxy hops are trusted (none by default).
-    trustProxy: config.TRUST_PROXY_HOPS > 0 ? config.TRUST_PROXY_HOPS : false,
+    trustProxy: (_address: string, hop: number) => hop < config.TRUST_PROXY_HOPS,
   })
 
   base.setValidatorCompiler(validatorCompiler)

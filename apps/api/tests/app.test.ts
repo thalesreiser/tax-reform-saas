@@ -43,7 +43,7 @@ describe("client address behind a proxy", () => {
       // The first entry is what a client could send itself; the proxy appended the last one.
       headers: { "x-forwarded-for": "198.51.100.9, 203.0.113.7" },
     })
-    return (res.json() as { ip: string }).ip
+    return res.json<{ ip: string }>().ip
   }
 
   it("ignores X-Forwarded-For by default", async () => {
