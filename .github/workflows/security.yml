@@ -48,6 +48,10 @@ jobs:
           GITLEAKS_VERSION: 8.30.1
           # A comment needs a write token and would point at the secret in a public thread.
           GITLEAKS_ENABLE_COMMENTS: "false"
-      # The action leaves this binary on PATH. Without log options it scans every fetched ref.
+      # The action leaves this binary on PATH. Pull requests and pushes scan the whole history of
+      # the commit under test only (HEAD: develop plus the change), never other open branches, so a
+      # finding on an unrelated branch cannot fail this run. The weekly run scans every branch.
       - name: Scan the full history
-        run: gitleaks git --no-banner --redact --exit-code 1 .
+        env:
+          LOG_OPTS: ${{ github.event_name == 'schedule' && '--all' || 'HEAD' }}
+        run: gitleaks git --no-banner --redact --exit-code 1 --log-opts="$LOG_OPTS" .
