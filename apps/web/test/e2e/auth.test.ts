@@ -146,7 +146,9 @@ describe("auth screens (server-rendered, mocked API)", () => {
     for (const label of ["Clientes", "Simulações no mês", "Chamadas à API"]) {
       expect(tiles).toContain(label)
     }
-    const text = tiles.slice(0, tiles.indexOf("</ul>")).replace(/<[^>]*>/g, "")
+    // Text nodes only (between tags), so class names with digits do not count.
+    const list = tiles.slice(0, tiles.indexOf("</ul>"))
+    const text = [...list.matchAll(/>([^<]*)</g)].map((m) => m[1] ?? "").join(" ")
     expect(text).toContain("—")
     expect(text).not.toMatch(/\d/)
     expect(html).toContain("Cadastre o primeiro cliente para começar.")
