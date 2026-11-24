@@ -173,7 +173,7 @@ describe("auth screens (server-rendered, mocked API)", () => {
     )
     expect(section.match(/aria-current="step"/g)).toHaveLength(1)
     expect(section.match(/aria-disabled="true"/g)).toHaveLength(4)
-    expect(section).not.toMatch(/<a[^>]*href=/)
+    expect(section).not.toMatch(/<as[^>]*href=/)
   })
 
   it("shows the portfolio and recent simulations empty states", async () => {
@@ -187,7 +187,7 @@ describe("auth screens (server-rendered, mocked API)", () => {
 
   it("renders the signed-in shell: one h1, labelled navigation and disabled future pages", async () => {
     const html = await page("/painel", COOKIE)
-    expect(html.match(/<h1/g)).toHaveLength(1)
+    expect(html.match(/<h1b/g)).toHaveLength(1)
     expect(html).toMatch(/<main[^>]*id="conteudo"/)
     expect(html).toMatch(/<a[^>]*href="#conteudo"/)
     const navs = [
@@ -200,7 +200,7 @@ describe("auth screens (server-rendered, mocked API)", () => {
     )
     for (const label of ["Clientes", "Simulações", "Chaves de API", "Escritório"]) {
       expect(nav).toMatch(
-        new RegExp(`<a[^>]*aria-disabled="true"[^>]*>[\s\S]*?${label}[\s\S]*?Em breve`),
+        new RegExp(`<a[^>]*aria-disabled="true"[^>]*>[\\s\\S]*?${label}[\\s\\S]*?Em breve`),
       )
     }
     expect(nav.match(/href=/g)).toHaveLength(1)
