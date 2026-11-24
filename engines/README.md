@@ -90,7 +90,7 @@ the upstream integration tests that assert values, all at the pinned tags. Each 
 - `request.json`: the upstream request, as published or as the upstream test builds it.
 - `expected.json`: `endpoint`, HTTP `status` and `values`, a map from a path in the raw response
   (`.objetos[3].erros[0].code`) to the value upstream asserts, as text. Decimals are compared by
-  decimal equality (never as floats); `null` means absent or null.
+  decimal equality (never as floats); `null` means absent or null; a list means the same texts in any order.
 - `source.md`: the upstream file, line, test name and tag the values come from.
 
 `packages/engine-client/tests/engines/contract.test.ts` runs every case through the client in the

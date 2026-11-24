@@ -19,8 +19,11 @@ import {
 interface Expected {
   endpoint: string
   status: number
-  /** Path in the raw response (`.objetos[2].erros[0].code`) to its value; `null`: absent or null. */
-  values: Record<string, string | null>
+  /**
+   * Path in the raw response (`.objetos[2].erros[0].code`) to its value; `null`: absent or null; a list:
+   * the same texts in any order (upstream does not fix the order).
+   */
+  values: Record<string, string | string[] | null>
 }
 
 /** What one call returned: the client's result and the raw response the engine sent. */
@@ -145,7 +148,20 @@ function asDecimal(text: string) {
 }
 
 /** Empty when the actual value matches; otherwise a readable line for the diff. */
-function compare(path: string, expected: string | null, actual: unknown): string | undefined {
+function compare(
+  path: string,
+  expected: string | string[] | null,
+  actual: unknown,
+): string | undefined {
+  if (Array.isArray(expected)) {
+    const sorted = (list: unknown[]) => JSON.stringify([...list].map(String).sort())
+    const same = Array.isArray(actual) && sorted(actual) === sorted(expected)
+    return same
+      ? undefined
+      : `  ${path} (any order)
+    expected: ${sorted(expected)}
+    actual:   ${JSON.stringify(actual)}`
+  }
   const shown = Fiscal.isDecimal(actual) ? actual.toFixed() : JSON.stringify(actual)
   const line = `  ${path}\n    expected: ${JSON.stringify(expected)}\n    actual:   ${shown}`
   if (expected === null) return actual === null || actual === undefined ? undefined : line
@@ -158,17 +174,9 @@ function compare(path: string, expected: string | null, actual: unknown): string
   return typeof text === "string" && text === expected ? undefined : line
 }
 
-/** The codes and titles of an error body, to tell why the engine refused a case. */
+/** The engine's error body (codes, titles, pointers), to tell why it refused a case. */
 function errorCodes(body: unknown): string {
-  const errors = lookup(body, ".errors")
-  if (!Array.isArray(errors)) return ""
-  return JSON.stringify(
-    errors.map((error) => [
-      lookup(error, ".code"),
-      lookup(error, ".title"),
-      lookup(error, ".detail"),
-    ]),
-  )
+  return body === undefined ? "" : JSON.stringify(body).slice(0, 600)
 }
 
 async function readCases(engine: string) {
