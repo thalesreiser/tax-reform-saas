@@ -40,7 +40,7 @@ beforeAll(async () => {
   db = await setupTestDatabase()
   officeA = await createOffice(db.app, "Escritório Clientes A")
   officeB = await createOffice(db.app, "Escritório Clientes B")
-  app = Fastify()
+  app = Fastify({ genReqId: () => randomUUID() })
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
   app.setErrorHandler(errorHandler)

@@ -20,6 +20,8 @@ describe("loadConfig", () => {
       TRUST_PROXY_HOPS: 0,
       ENGINE_TIMEOUT_MS: 30_000,
       REFERENCE_CACHE_TTL_SECONDS: 21_600,
+      CNPJ_LOOKUP_URL: "https://brasilapi.com.br/api/cnpj/v1",
+      CNPJ_LOOKUP_TIMEOUT_MS: 8000,
       CORS_EXTRA_ORIGINS: [],
     })
   })
