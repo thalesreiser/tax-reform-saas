@@ -8,7 +8,7 @@ export const NAV_ITEMS = [
   { id: "clients", icon: "i-lucide-building-2", to: "/clientes" },
   { id: "simulations", icon: "i-lucide-chart-column", to: null },
   { id: "apiKeys", icon: "i-lucide-key-round", to: null },
-  { id: "office", icon: "i-lucide-settings", to: null },
+  { id: "office", icon: "i-lucide-settings", to: "/escritorio" },
 ] as const satisfies readonly { id: string; icon: string; to: string | null }[]
 
 export type NavItem = (typeof NAV_ITEMS)[number]

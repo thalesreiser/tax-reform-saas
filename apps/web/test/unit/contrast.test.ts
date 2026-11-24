@@ -269,6 +269,28 @@ describe.each<Mode>(["light", "dark"])("Aurora tokens, %s mode", (mode) => {
     }
   })
 
+  // FE-02.4 pairs: office settings. The brand colour itself is the office's choice and is only
+  // warned about (`brandContrast`), so it is not a token pair here.
+  it("office settings: status, read-only notice and contrast warning on a glass card", () => {
+    const page = gradient(["--aurora-page-from", "--aurora-page-via", "--aurora-page-to"], mode)
+    const cards = [
+      ...page.map((p) => over(color("--aurora-glass", mode), p)),
+      opaque("--aurora-glass-opaque", mode),
+    ]
+    for (const token of [
+      "--ui-text-muted",
+      "--ui-warning",
+      "--ui-text-highlighted",
+      "--ui-error",
+    ]) {
+      expect(worst(opaque(token, mode), cards)).toBeGreaterThanOrEqual(TEXT)
+    }
+  })
+
+  it("report header preview: fixed foreground on white paper in both modes", () => {
+    expect(contrast(parse("#1c1b3a").rgb, [255, 255, 255])).toBeGreaterThanOrEqual(TEXT)
+  })
+
   it("the password toggle icon (muted) reaches 3:1 on the input background", () => {
     const input = opaque("--ui-bg", mode)
     expect(contrast(opaque("--ui-text-muted", mode), input)).toBeGreaterThanOrEqual(3)

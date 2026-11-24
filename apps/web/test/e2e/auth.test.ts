@@ -56,14 +56,65 @@ function listClients(url: URL, empty: boolean) {
   return { items, page: 1, pageSize: Number(url.searchParams.get("pageSize")), total: items.length }
 }
 
+// Office settings (FE-02.4). The accountant cookie signs in the same user with that role.
+const ACCOUNTANT = "trs.session_token=accountant"
+const OFFICE = {
+  id: "0a1b2c3d-1111-4222-8333-444455556666",
+  name: "Escritório Fictício Ltda",
+  cnpj: "11222333000181",
+  contactEmail: "contato@example.com",
+  contactPhone: "(11) 4000-0000",
+  brandColor: "#3AA8FF",
+  brandContrast: { onWhite: 2.55, onBlack: 8.23, meetsAaOnWhite: false, meetsAaOnBlack: true },
+  logo: null,
+  updatedAt: "2026-11-24T17:05:00.000Z",
+}
+const MEMBERS = [
+  {
+    id: "1a1a1a1a-1111-4111-8111-111111111111",
+    userId: "u1",
+    name: "Ana Teste",
+    email: "convidada@example.com",
+    role: "owner",
+    joinedAt: "2026-11-01T12:00:00.000Z",
+  },
+  {
+    id: "2b2b2b2b-2222-4222-8222-222222222222",
+    userId: "u2",
+    name: "Bruno Exemplo",
+    email: "bruno@example.com",
+    role: "accountant",
+    joinedAt: "2026-11-10T12:00:00.000Z",
+  },
+]
+const INVITATIONS = [
+  {
+    id: "3c3c3c3c-3333-4333-8333-333333333333",
+    email: "carla@example.com",
+    role: "accountant",
+    expiresAt: "2026-11-26T12:00:00.000Z",
+    createdAt: "2026-11-24T12:00:00.000Z",
+  },
+]
+
 function mockApi(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? "/", "http://api.test")
   const empty = (req.headers.cookie ?? "").includes(EMPTY_OFFICE)
-  const signedIn = (req.headers.cookie ?? "").includes(COOKIE) || empty
+  const signedIn =
+    (req.headers.cookie ?? "").includes(COOKIE) ||
+    empty ||
+    (req.headers.cookie ?? "").includes(ACCOUNTANT)
   if (url.pathname === "/api/auth/get-session") return send(res, 200, signedIn ? session : null)
   if (!signedIn) return send(res, 401, { status: 401, title: "Unauthorized" })
+  const role = (req.headers.cookie ?? "").includes(ACCOUNTANT) ? "accountant" : "owner"
   if (url.pathname === "/office") {
-    return send(res, 200, { id: "o1", name: "Escritório Fictício Ltda", role: "owner" })
+    return send(res, 200, { id: "o1", name: "Escritório Fictício Ltda", role })
+  }
+  if (url.pathname === "/v1/office") return send(res, 200, { ...OFFICE, role })
+  if (url.pathname === "/v1/office/members") return send(res, 200, { items: MEMBERS })
+  if (url.pathname === "/v1/office/invitations") {
+    if (role !== "owner") return send(res, 403, { status: 403 })
+    return send(res, 200, { items: INVITATIONS })
   }
   if (url.pathname === "/v1/clients") return send(res, 200, listClients(url, empty))
   const client = CLIENTS.find((c) => url.pathname === `/v1/clients/${c.id}`)
@@ -245,12 +296,13 @@ describe("auth screens (server-rendered, mocked API)", () => {
       /<a[^>]*href="\/painel"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/painel"/,
     )
     expect(nav).toMatch(/<a[^>]*href="\/clientes"[^>]*>[\s\S]*?Clientes/)
-    for (const label of ["Simulações", "Chaves de API", "Escritório"]) {
+    expect(nav).toMatch(/<a[^>]*href="\/escritorio"[^>]*>[\s\S]*?Escritório/)
+    for (const label of ["Simulações", "Chaves de API"]) {
       expect(nav).toMatch(
         new RegExp(`<a[^>]*aria-disabled="true"[^>]*>[\\s\\S]*?${label}[\\s\\S]*?Em breve`),
       )
     }
-    expect(nav.match(/href=/g)).toHaveLength(2)
+    expect(nav.match(/href=/g)).toHaveLength(3)
   })
 
   it("offers a menu toggle for the navigation drawer on small screens", async () => {
@@ -357,5 +409,41 @@ describe("client screens (server-rendered, mocked API)", () => {
   it("explains when a client does not exist", async () => {
     const html = await page("/clientes/5e2b8f0a-3c4d-4e5f-8a1b-2c3d4e5f6a7b", COOKIE)
     expect(html).toContain("Cliente não encontrado")
+  })
+})
+
+describe("office settings (server-rendered, mocked API)", () => {
+  it("redirects anonymous visitors to sign-in", async () => {
+    const response = await fetch("/escritorio", {
+      redirect: "manual",
+      headers: { accept: "text/html" },
+    })
+    expect(response.status).toBe(302)
+  })
+
+  it("shows owners the editable profile, brand warning, team and invitations", async () => {
+    const html = await page("/escritorio", COOKIE)
+    expect(html.match(/<h1/g)).toHaveLength(1)
+    for (const id of ["perfil", "marca", "equipe", "chaves"]) {
+      expect(html).toMatch(new RegExp(`<section[^>]*id="${id}"`))
+    }
+    expect(html).toMatch(/<input[^>]*value="11.222.333\/0001-81"/)
+    expect(html).toContain("Salvar perfil")
+    expect(html).toContain("abaixo do mínimo de acessibilidade")
+    expect(html).toContain("Bruno Exemplo")
+    expect(html).toContain("Convidar pessoa")
+    expect(html).toContain("carla@example.com")
+    expect(html).toMatch(/aria-live="polite"/)
+    expect(html).toContain("Em breve")
+  })
+
+  it("shows accountants a read-only profile and the members list only", async () => {
+    const html = await page("/escritorio", ACCOUNTANT)
+    expect(html).toContain("Somente proprietários podem alterar estas informações.")
+    expect(html).not.toContain("Salvar perfil")
+    expect(html).toContain("Bruno Exemplo")
+    expect(html).not.toContain("Convidar pessoa")
+    expect(html).not.toContain("carla@example.com")
+    expect(html).not.toMatch(/<input[^>]*type="file"/)
   })
 })
