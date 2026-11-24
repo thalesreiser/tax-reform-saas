@@ -65,6 +65,11 @@ const configSchema = z.object({
   SENTRY_ENVIRONMENT: z.string().min(1).default("development"),
   /** Share of requests traced for performance; 0 (default) sends errors only. */
   SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
+  /** CNPJ registry provider (BrasilAPI); the CNPJ is appended to this URL. */
+  CNPJ_LOOKUP_URL: z
+    .url({ protocol: /^https?$/, error: "Must be an http(s) URL" })
+    .default("https://brasilapi.com.br/api/cnpj/v1"),
+  CNPJ_LOOKUP_TIMEOUT_MS: z.coerce.number().int().min(500).max(30_000).default(8000),
 })
 
 export type Config = z.output<typeof configSchema>

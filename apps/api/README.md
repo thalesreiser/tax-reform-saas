@@ -2,13 +2,15 @@
 
 Fastify 5 API: the internal routes used by the web app and the public `/v1` API (BE-03).
 
-| Path            | What it is                                                        |
-| --------------- | ----------------------------------------------------------------- |
-| `/health`       | Liveness probe with the deployed version                          |
-| `/openapi.json` | OpenAPI 3.1 document generated from the Zod schemas of each route |
-| `/api/auth/*`   | better-auth: sign-up, sign-in, sessions, offices, invitations     |
-| `/office`       | Active office of the session and the user's role in it            |
-| `/office/audit` | Audit log of the active office (owner only)                       |
+| Path             | What it is                                                        |
+| ---------------- | ----------------------------------------------------------------- |
+| `/health`        | Liveness probe with the deployed version                          |
+| `/openapi.json`  | OpenAPI 3.1 document generated from the Zod schemas of each route |
+| `/api/auth/*`    | better-auth: sign-up, sign-in, sessions, offices, invitations     |
+| `/office`        | Active office of the session and the user's role in it            |
+| `/office/audit`  | Audit log of the active office (owner only)                       |
+| `/v1/clients`    | Client companies of the office (RF-02)                            |
+| `/v1/cnpj/:cnpj` | Registry data of a CNPJ (BrasilAPI)                               |
 
 ## Conventions
 
@@ -276,3 +278,43 @@ API keys come with BE-03.1 as a second entry in the plugin's `authenticate` list
 - **Errors.** No `ENGINE_REGIME_REGULAR_URL`: 503. Engine timeout (`ENGINE_TIMEOUT_MS`, default 30 s
   for a Flycast cold start): 504. Engine 404: 404. Other failures: 502. Details are generic; the
   engine body is never returned or logged, and the request log shows the route pattern, not the codes.
+
+## Clients
+
+Client companies of the office (RF-02), table `clients` (registry columns and the CNPJ `CHECK` in
+`0007_client_registry.sql`; row-level security from `0001_office_rls.sql`). Owners and accountants
+have the same access.
+
+| Route                    | What it does                                                        |
+| ------------------------ | ------------------------------------------------------------------- |
+| `GET /v1/cnpj/:cnpj`     | Registry data of a CNPJ: names, address, CNAEs, status, Simples/MEI |
+| `POST /v1/clients`       | Create; `lookup: true` fills the registry fields (sent names win)   |
+| `GET /v1/clients`        | List: `q` (part of a name or start of the CNPJ), `page`, `pageSize` |
+| `GET /v1/clients/:id`    | One client                                                          |
+| `PATCH /v1/clients/:id`  | Change `legalName`, `tradeName` or `notes`                          |
+| `DELETE /v1/clients/:id` | Hard delete (the audit events stay)                                 |
+
+- **CNPJ** (`src/clients/cnpj.ts`): numeric and alphanumeric (from July 2026: 12 characters `0-9A-Z`
+  and 2 numeric check digits, modulo 11 over ASCII - 48, Receita Federal technical note). Input may be
+  masked and lowercase; it is stored normalised. The database only checks the format
+  (`^[0-9A-Z]{12}[0-9]{2}$`); the API checks the digits. A CNPJ is unique per office (409).
+- **Audit:** every create, update and delete writes `client.*` in the same transaction; updates list
+  only the names of the fields sent.
+- **Regime:** `mei` or `simples_nacional` only when the registry says so, otherwise `unknown`; the
+  latest yearly taxation form the registry reports is returned as given, never inferred.
+- **Logs:** CNPJs and search text never reach the log (the request log shows the route pattern).
+
+### CNPJ provider
+
+**Decided (Thales, 2026-11-24): BrasilAPI** (`https://brasilapi.com.br/api/cnpj/v1/{cnpj}`) for
+staging and beta. It is a free third-party service **without SLA**, to be revisited before production
+(e.g. a paid provider or the Receita's own data). The provider sits behind the `CnpjProvider`
+interface (`src/clients/lookup.ts`), so replacing it is one module.
+
+- `CNPJ_LOOKUP_URL` and `CNPJ_LOOKUP_TIMEOUT_MS` (default 8 s). In-process LRU cache (1 h, 500
+  entries, shared by offices: registry data is public); failures are not cached.
+- 30 lookups per office per minute (also counted for `POST /v1/clients` with `lookup: true`): 429.
+- Errors: not in the registry 404 (422 on create); timeout 504; any other failure 502. Details are
+  generic; the provider's body is never returned or logged.
+- BrasilAPI may not know alphanumeric CNPJs yet: those lookups answer 404/502 until it does, and the
+  client can still be created by hand.

@@ -12,8 +12,8 @@ import {
 const role = z.enum(OFFICE_ROLES)
 /** Office fields better-auth can update; only their names are logged, never their values. */
 export const OFFICE_FIELDS = ["name", "slug", "logo", "metadata"] as const
-/** Client fields (BE-02.2 extends this list as columns are added). */
-export const CLIENT_FIELDS = ["cnpj", "legalName"] as const
+/** Client fields a `client.updated` event may name. */
+export const CLIENT_FIELDS = ["cnpj", "legalName", "tradeName", "notes"] as const
 
 /**
  * Allow-list of metadata per action. Only enums, ids and field names: no free text, so a name, an
