@@ -14,11 +14,14 @@ share view and the public landing pages arrive here task by task (FE tracks).
 | `app/middleware/auth.ts`  | Route middleware: anonymous users go to `/entrar`               |
 | `app/utils/auth.ts`       | Form schemas, API error -> message key, safe redirects          |
 | `app/layouts/default.vue` | Base shell: skip link, header, main landmark, footer            |
+| `app/layouts/app.vue`     | Signed-in shell: header, sidebar navigation / drawer, main      |
+| `app/utils/dashboard.ts`  | Dashboard view model, navigation items, impact formatting       |
 | `app/pages/`              | File-based routes (`index.vue` is the placeholder home page)    |
 | `app/error.vue`           | Error page (404 and unexpected errors), rendered in the layout  |
 | `i18n/locales/pt-BR.json` | Every user-facing string                                        |
 | `test/e2e/`               | End-to-end tests against the built, server-rendered app         |
 | `test/unit/`              | Unit tests (contrast, auth validation and error messages)       |
+| `test/nuxt/`              | Component tests in the Nuxt runtime (happy-dom) with fixtures   |
 | `.env.example`            | Runtime variables (`NUXT_PUBLIC_API_URL`, `PORT`)               |
 
 ## Conventions
@@ -102,3 +105,20 @@ header, so pages and the `auth` middleware know the session before hydration. Co
   cookie reaches the web host (same site, or a shared cookie domain). Both are pending on the API.
 - **Tests:** `test/e2e/auth.test.ts` renders the pages against a small mock API (`node:http`), so the
   web suite never needs the real API.
+
+## App shell and dashboard (FE-02.1)
+
+- **Layout `app`:** signed-in pages set `definePageMeta({ layout: "app" })`. It keeps the skip link
+  and `main#conteudo`, adds `AppNav` (`nav` labelled "Navegação principal") as a sidebar from `lg`
+  and inside the header's slide-over menu below it, and the header shows office name, account menu
+  and colour-mode toggle. Navigation items live in `NAV_ITEMS`; an item with `to: null` (page not
+  built yet) renders as `aria-disabled` with "Em breve", never as a link.
+- **`/painel`:** `useDashboard()` returns a typed `DashboardView`. Until the client, simulation and
+  usage endpoints exist (BE-02.2, BE-02.4, BE-03.2) it is the empty state of a new office: no
+  numbers. Sections are components in `app/components/dashboard/` that take the view model as props:
+  onboarding checklist (next step on `surface-brand`), KPI tiles, portfolio ranking by impact in
+  2033 and last simulations. Impact values are decimal strings in percentage points, formatted
+  without `number` arithmetic (`formatPoints`), with the tone spelled out for screen readers.
+- **Tests:** `test/nuxt/dashboard.test.ts` mounts the components with the populated fixture
+  (`test/nuxt/fixtures/dashboard.ts`, fictional data); the e2e suite checks the empty state,
+  landmarks, disabled navigation and the menu toggle.
