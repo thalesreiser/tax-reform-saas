@@ -105,3 +105,39 @@ asserts, and link the exact source. A value without an upstream source does not 
 **A contract test failing after a tag bump** means the engine changed its results. Read the upstream
 `CHANGELOG.md` and the changed example or test first; update `expected.json` only to what upstream
 now publishes, citing the new source in `source.md`. Never edit an expectation just to make CI pass.
+
+## Upstream watcher
+
+`.github/workflows/engines-upstream-watch.yml` runs every Monday at 06:00 BRT and on demand from
+the Actions tab (MOT-01.4). For each engine it:
+
+1. Reads the latest upstream **release** (`/releases/latest`: drafts and pre-releases are ignored)
+   and compares it with `versions.env` (version order, so an older release never opens a PR).
+2. If newer, resolves the commit the tag points to with `git ls-remote` (as `check-pins.sh` does),
+   cross-checks it with the API, updates the tag and SHA and runs `check-pins.sh`.
+3. Pushes `chore/engines-bump-<engine>` and opens, or updates, one PR per engine against `develop`
+   with the release notes between the two tags, the upstream `CHANGELOG.md` excerpt, the compare
+   link and a review checklist. If the branch already pins that tag it is not pushed again, so
+   fixture fixes committed on it are kept; only the PR body is refreshed.
+4. Dispatches `engine-images.yml` (images, golden contract tests, OpenAPI check) and `engines.yml`
+   on the branch, waits for them and comments their conclusions on the PR.
+
+It only calls the GitHub API and `git ls-remote`: no upstream code runs in this workflow.
+
+**Why the dispatch:** the PR and the push are made with `GITHUB_TOKEN`, and GitHub does not start
+`pull_request` or `push` workflows for those events. The required `ci-ok` check therefore does not
+appear on its own: **close and reopen the PR** (a human event) to start `ci.yml` and the path-filtered
+engine workflows. Using a GitHub App token or a fine-grained PAT instead of `GITHUB_TOKEN` would make
+the checks start by themselves (pending decision, see the MOT-01.4 PR).
+
+### Reviewing a bump PR
+
+1. Read the release notes and the CHANGELOG excerpt; open the compare link for changes in
+   `docs/exemplos.md`, the Flyway scripts and the integration tests.
+2. Check the watcher's comment: both dispatched runs green. A failing contract test means the engine
+   changed its results: follow [Golden contract tests](#golden-contract-tests), never edit an
+   expectation to make CI pass. If the OpenAPI document changed, regenerate `packages/engine-client`.
+3. Compare memory and start-up time in the run summaries with the numbers in ADR 004.
+4. Close and reopen the PR, wait for `ci-ok`, then merge. When both engines are bumped in the same
+   week, the second PR conflicts on `versions.env` after the first merge: delete its branch and
+   re-run the watcher.
