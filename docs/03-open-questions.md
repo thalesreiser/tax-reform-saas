@@ -14,6 +14,7 @@ ends in an ADR.
 | Q-05 | ICMS-ST, DIFAL and state benefits stay out of the MVP | Yes, out; show a notice when the profile needs them | MOT-02.4 |
 | Q-06 | Partner accountant: availability per week, how golden cases are delivered, compensation | Spreadsheet of cases per regime, one review session per week | MOT-02.7, MOT-03.3 |
 | Q-08 | API key per client company or per office | Per client company, created by the office | BE-03.1 |
+| DEC-04 | NFS-e extension approach: fill the Emissor Web form, use the official API, or a copy-paste helper ([ADR 009](adr/009-nfse-extension-approach.md), proposed) | Copy-paste helper first, then assisted fill of steps 2-3 without submit; API only for XSD validation | EXT-01.2 to EXT-01.5 |
 
 ## Answered
 
