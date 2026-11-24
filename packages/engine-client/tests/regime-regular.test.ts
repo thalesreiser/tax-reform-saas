@@ -231,6 +231,63 @@ describe("reference data", () => {
   })
 })
 
+describe("reference data lists and lookups", () => {
+  const BASE = "http://regime-regular:8080/api/calculadora/dados-abertos"
+
+  it("reads state and municipal rates with the code and date", async () => {
+    const fetch = mockFetch(
+      jsonResponse({ aliquotaReferencia: 0.1, aliquotaPropria: 0.1 }),
+      jsonResponse({ aliquotaReferencia: 0.05, aliquotaPropria: 0.05 }),
+    )
+    const uf = await client(fetch).getAliquotaUf(33, "2027-01-01")
+    const mun = await client(fetch).getAliquotaMunicipio(3304557, "2027-01-01")
+
+    if (!uf.ok || !mun.ok) throw new Error("rate lookup failed")
+    expect(uf.value.aliquotaReferencia?.toFixed(2)).toBe("0.10")
+    expect(mun.value.aliquotaPropria?.toFixed(2)).toBe("0.05")
+    expect(sentRequest(fetch).url).toBe(`${BASE}/aliquota-uf?codigoUf=33&data=2027-01-01`)
+    expect(sentRequest(fetch, 1).url).toBe(
+      `${BASE}/aliquota-municipio?codigoMunicipio=3304557&data=2027-01-01`,
+    )
+  })
+
+  it("lists CSTs, legal bases, NCM and NBS", async () => {
+    const cst = [{ id: 1, codigo: "000", descricao: "Tributação integral" }]
+    const fetch = mockFetch(
+      jsonResponse(cst),
+      jsonResponse([{ codigoClassificacaoTributaria: "000001" }]),
+      jsonResponse([{ ncm: "22030000", descricao: "Cervejas" }]),
+      jsonResponse([{ codigo: "101", descricao: "Serviços de construção" }]),
+    )
+    const c = client(fetch)
+    expect(await c.listSituacoesTributarias("2027-01-01")).toEqual({ ok: true, value: cst })
+    expect((await c.listFundamentacoesLegais("2027-01-01")).ok).toBe(true)
+    expect((await c.listNcm("2027-01-01")).ok).toBe(true)
+    expect((await c.listNbs("2027-01-01")).ok).toBe(true)
+    expect(sentRequest(fetch).url).toBe(`${BASE}/situacoes-tributarias/cbs-ibs?data=2027-01-01`)
+    expect(sentRequest(fetch, 2).url).toBe(`${BASE}/ncm/vigentes?data=2027-01-01`)
+    expect(sentRequest(fetch, 3).url).toBe(`${BASE}/nbs/lista?data=2027-01-01`)
+  })
+
+  it("rejects a list answer that is not a list", async () => {
+    const result = await client(mockFetch(jsonResponse({ ncm: "1" }))).listNcm("2027-01-01")
+    expect(result).toMatchObject({ ok: false, error: { kind: "invalid-response" } })
+  })
+
+  it("parses NCM and NBS rates as decimals", async () => {
+    const fetch = mockFetch(
+      jsonResponse({ capitulo: "22", aliquotaAdValorem: 0.25 }),
+      jsonResponse({ item: "1", aliquotaAdValorem: "0.1" }),
+    )
+    const ncm = await client(fetch).getNcm("22030000", "2027-01-01")
+    const nbs = await client(fetch).getNbs("101011100", "2027-01-01")
+    if (!ncm.ok || !nbs.ok) throw new Error("lookup failed")
+    expect(ncm.value.aliquotaAdValorem?.toFixed(2)).toBe("0.25")
+    expect(nbs.value.aliquotaAdValorem?.toFixed(1)).toBe("0.1")
+    expect(sentRequest(fetch).url).toBe(`${BASE}/ncm?ncm=22030000&data=2027-01-01`)
+  })
+})
+
 describe("XML", () => {
   it("generates the XML group as text", async () => {
     const xml = "<IBSCBS><CST>000</CST></IBSCBS>"

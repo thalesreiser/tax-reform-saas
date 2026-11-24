@@ -27,6 +27,12 @@ export type RegimeRegularVersion = Schemas["VersaoOutput"]
 export type ErrorDescription = Schemas["ErroDescricao"]
 export type Aliquota = Decimals<"AliquotaDadosAbertosOutput">
 export type ClassificacaoTributaria = Decimals<"ClassificacaoTributariaDadosAbertosOutput">
+export type SituacaoTributaria = Schemas["SituacaoClassificacaoAninhadoOutput"]
+export type FundamentacaoLegal = Schemas["FundamentacaoClassificacaoDadosAbertosOutput"]
+export type Ncm = Decimals<"NcmDadosAbertosOutput">
+export type NcmVigente = Schemas["NcmVigenciaOutput"]
+export type Nbs = Decimals<"NbsDadosAbertosOutput">
+export type NbsResumo = Schemas["NbsListaDadosAbertosOutput"]
 
 const decimals =
   <N extends keyof Schemas & keyof typeof decimalShapes>(name: N) =>
@@ -37,6 +43,14 @@ const plain =
   <N extends keyof Schemas>() =>
   (data: unknown): Schemas[N] =>
     asObject(data) as Schemas[N]
+
+// The engine documents these responses as one object, but they are lists (see its examples).
+const list =
+  <N extends keyof Schemas>() =>
+  (data: unknown): Schemas[N][] => {
+    if (!Array.isArray(data)) throw new TypeError("the response is not a list")
+    return data as Schemas[N][]
+  }
 
 /** Client of `calculadora-rtc-regime-regular` (CBS, IBS and IS in the regular regime). */
 export function createRegimeRegularClient(options: EngineClientOptions) {
@@ -186,6 +200,140 @@ export function createRegimeRegularClient(options: EngineClientOptions) {
             { params: { path: { cClassTrib }, query: { data } }, signal },
           ),
         decimals("ClassificacaoTributariaDadosAbertosOutput"),
+        opts,
+      )
+    },
+
+    /** `GET /calculadora/dados-abertos/aliquota-uf`: IBS state rates on a date (YYYY-MM-DD). */
+    getAliquotaUf(
+      codigoUf: number,
+      data: string,
+      opts?: CallOptions,
+    ): Promise<EngineResult<Aliquota>> {
+      return call(
+        options,
+        "GET",
+        (signal) =>
+          client.GET("/calculadora/dados-abertos/aliquota-uf", {
+            params: { query: { codigoUf, data } },
+            signal,
+          }),
+        decimals("AliquotaDadosAbertosOutput"),
+        opts,
+      )
+    },
+
+    /** `GET /calculadora/dados-abertos/aliquota-municipio`: IBS municipal rates on a date. */
+    getAliquotaMunicipio(
+      codigoMunicipio: number,
+      data: string,
+      opts?: CallOptions,
+    ): Promise<EngineResult<Aliquota>> {
+      return call(
+        options,
+        "GET",
+        (signal) =>
+          client.GET("/calculadora/dados-abertos/aliquota-municipio", {
+            params: { query: { codigoMunicipio, data } },
+            signal,
+          }),
+        decimals("AliquotaDadosAbertosOutput"),
+        opts,
+      )
+    },
+
+    /** `GET /calculadora/dados-abertos/situacoes-tributarias/cbs-ibs`: CSTs and their cClassTrib. */
+    listSituacoesTributarias(
+      data: string,
+      opts?: CallOptions,
+    ): Promise<EngineResult<SituacaoTributaria[]>> {
+      return call(
+        options,
+        "GET",
+        (signal) =>
+          client.GET("/calculadora/dados-abertos/situacoes-tributarias/cbs-ibs", {
+            params: { query: { data } },
+            signal,
+          }),
+        list<"SituacaoClassificacaoAninhadoOutput">(),
+        opts,
+      )
+    },
+
+    /** `GET /calculadora/dados-abertos/fundamentacoes-legais`: legal basis of each cClassTrib. */
+    listFundamentacoesLegais(
+      data: string,
+      opts?: CallOptions,
+    ): Promise<EngineResult<FundamentacaoLegal[]>> {
+      return call(
+        options,
+        "GET",
+        (signal) =>
+          client.GET("/calculadora/dados-abertos/fundamentacoes-legais", {
+            params: { query: { data } },
+            signal,
+          }),
+        list<"FundamentacaoClassificacaoDadosAbertosOutput">(),
+        opts,
+      )
+    },
+
+    /** `GET /calculadora/dados-abertos/ncm`: one NCM (8 digits) on a date. */
+    getNcm(ncm: string, data: string, opts?: CallOptions): Promise<EngineResult<Ncm>> {
+      return call(
+        options,
+        "GET",
+        (signal) =>
+          client.GET("/calculadora/dados-abertos/ncm", {
+            params: { query: { ncm, data } },
+            signal,
+          }),
+        decimals("NcmDadosAbertosOutput"),
+        opts,
+      )
+    },
+
+    /** `GET /calculadora/dados-abertos/ncm/vigentes`: every NCM valid on a date. */
+    listNcm(data: string, opts?: CallOptions): Promise<EngineResult<NcmVigente[]>> {
+      return call(
+        options,
+        "GET",
+        (signal) =>
+          client.GET("/calculadora/dados-abertos/ncm/vigentes", {
+            params: { query: { data } },
+            signal,
+          }),
+        list<"NcmVigenciaOutput">(),
+        opts,
+      )
+    },
+
+    /** `GET /calculadora/dados-abertos/nbs`: one NBS on a date. */
+    getNbs(nbs: string, data: string, opts?: CallOptions): Promise<EngineResult<Nbs>> {
+      return call(
+        options,
+        "GET",
+        (signal) =>
+          client.GET("/calculadora/dados-abertos/nbs", {
+            params: { query: { nbs, data } },
+            signal,
+          }),
+        decimals("NbsDadosAbertosOutput"),
+        opts,
+      )
+    },
+
+    /** `GET /calculadora/dados-abertos/nbs/lista`: every NBS valid on a date. */
+    listNbs(data: string, opts?: CallOptions): Promise<EngineResult<NbsResumo[]>> {
+      return call(
+        options,
+        "GET",
+        (signal) =>
+          client.GET("/calculadora/dados-abertos/nbs/lista", {
+            params: { query: { data } },
+            signal,
+          }),
+        list<"NbsListaDadosAbertosOutput">(),
         opts,
       )
     },

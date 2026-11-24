@@ -55,6 +55,10 @@ const configSchema = z.object({
   ENGINE_SIMPLES_NACIONAL_URL: z
     .url({ protocol: /^https?$/, error: "Must be an http(s) URL" })
     .optional(),
+  /** Per-call engine timeout; an engine on Flycast takes about 25 s to wake from a stop. */
+  ENGINE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(30_000),
+  /** How long reference data (CST, NCM, rates...) stays in the API's in-process cache. */
+  REFERENCE_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(604_800).default(21_600),
 })
 
 export type Config = z.output<typeof configSchema>

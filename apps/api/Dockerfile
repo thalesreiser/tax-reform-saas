@@ -15,8 +15,8 @@ RUN corepack enable && corepack install
 # .dockerignore keeps the context to the workspace manifests, the lockfile and apps/api.
 COPY . .
 # Install scripts are not needed to compile the API (only esbuild has one, for the tests).
-RUN pnpm install --frozen-lockfile --ignore-scripts --filter @trs/api \
- && pnpm --filter @trs/api build \
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter "@trs/api..." \
+ && pnpm --filter "@trs/api..." build \
  && pnpm --filter @trs/api deploy --prod --legacy --ignore-scripts /prod/api
 
 # node:24.22.3-alpine3.24

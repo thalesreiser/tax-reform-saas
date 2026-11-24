@@ -28,7 +28,9 @@ for (const item of result.value.items) {
 ## Functions
 
 - Regime regular: `calculateRegimeGeral`, `calculateRegimeGeralWithObservability`, `generateXml`,
-  `validateXml`, `getVersion`, `getErrorDescription`, `getAliquotaUniao`, `getClassificacaoTributaria`.
+  `validateXml`, `getVersion`, `getErrorDescription`, `getAliquotaUniao`, `getAliquotaUf`,
+  `getAliquotaMunicipio`, `getClassificacaoTributaria`, `listSituacoesTributarias`,
+  `listFundamentacoesLegais`, `getNcm`, `listNcm`, `getNbs`, `listNbs`.
 - Simples Nacional: `calculateSimplesNacional` (the unassisted endpoint; the per-item-rate one is
   obsolete upstream), `getVersion`, `getErrorDescription`, `listAtividades`.
 - `RegimeRegularApi` and `SimplesNacionalApi` export the raw generated types (`paths`, `components`).
