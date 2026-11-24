@@ -222,6 +222,34 @@ describe.each<Mode>(["light", "dark"])("Aurora tokens, %s mode", (mode) => {
     expect(worst(hoverText, hovered)).toBeGreaterThanOrEqual(TEXT)
   })
 
+  // FE-02.1 pairs: app shell navigation and dashboard home.
+  it("active navigation item: highlighted text on the 10% primary tint", () => {
+    const primary = color("--ui-primary", mode)
+    const active = surfaces(mode).map((s) => over({ rgb: primary.rgb, alpha: 0.1 }, s))
+    expect(worst(opaque("--ui-text-highlighted", mode), active)).toBeGreaterThanOrEqual(TEXT)
+  })
+
+  it("disabled navigation items and table headers (muted) reach 4.5:1 on every surface", () => {
+    expect(worst(opaque("--ui-text-muted", mode), surfaces(mode))).toBeGreaterThanOrEqual(TEXT)
+  })
+
+  it("next onboarding step: white text and its white outline on `surface-brand`", () => {
+    const panel = gradient(["--aurora-brand-from", "--aurora-brand-strong-to"], mode)
+    const white = opaque("--aurora-on-brand", mode)
+    expect(worst(white, panel)).toBeGreaterThanOrEqual(TEXT)
+    // "Próximo passo" chip border: white at 70% over the panel, a UI graphic (3:1).
+    const border = panel.map((p) => over({ rgb: white, alpha: 0.7 }, p))
+    expect(Math.min(...border.map((b, i) => contrast(b, panel[i] as Rgb)))).toBeGreaterThanOrEqual(
+      3,
+    )
+  })
+
+  it("done onboarding step: inverted check on the solid success circle", () => {
+    expect(
+      contrast(opaque("--ui-text-inverted", mode), opaque("--ui-success", mode)),
+    ).toBeGreaterThanOrEqual(3)
+  })
+
   it("the password toggle icon (muted) reaches 3:1 on the input background", () => {
     const input = opaque("--ui-bg", mode)
     expect(contrast(opaque("--ui-text-muted", mode), input)).toBeGreaterThanOrEqual(3)
