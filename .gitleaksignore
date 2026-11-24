@@ -1,0 +1,2 @@
+# False positive: a test password literal next to the word "token" (BE-01.4), not a secret.
+df8c6948b91992b26b526d9eebde88c31fbad82f:apps/api/tests/integration/auth.test.ts:generic-api-key:253

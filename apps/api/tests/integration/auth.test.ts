@@ -250,7 +250,7 @@ describe("password reset", () => {
     await requestReset(email)
     const token = tokenFor(email)
     expect((await reset(token)).statusCode).toBe(200)
-    const again = await reset(token, "outra-senha-de-teste-789")
+    const again = await reset(token, `${NEW_PASSWORD}-2`)
     expect(again.statusCode).toBe(400)
     expect(problemSchema.parse(again.json()).code).toBe("INVALID_TOKEN")
   })

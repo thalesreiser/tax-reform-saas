@@ -88,8 +88,6 @@ export function resetPasswordMail(input: { to: string; url: string }): MailMessa
       input.url,
       "O link vale por 1 hora e só pode ser usado uma vez. Ao redefinir, as outras sessões abertas são encerradas.",
       "Se você não fez esse pedido, ignore esta mensagem: sua senha continua a mesma.",
-    ].join("
-
-"),
+    ].join("\n\n"),
   }
 }
