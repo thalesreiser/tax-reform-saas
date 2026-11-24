@@ -211,6 +211,96 @@ describe("sign-up and sign-in", () => {
   })
 })
 
+describe("password reset", () => {
+  const NEW_PASSWORD = "nova-senha-de-teste-456"
+  const tokenFor = (email: string) =>
+    decodeURIComponent(linkIn(email, /\/redefinir-senha\?token=\S+/).split("token=")[1] ?? "")
+
+  async function requestReset(email: string, ip?: string) {
+    return call("POST", "/api/auth/request-password-reset", {
+      body: { email, redirectTo: `${BASE_URL}/redefinir-senha` },
+      ...(ip ? { ip } : {}),
+    })
+  }
+
+  async function reset(token: string, newPassword = NEW_PASSWORD, ip?: string) {
+    return call("POST", "/api/auth/reset-password", {
+      body: { token, newPassword },
+      ...(ip ? { ip } : {}),
+    })
+  }
+
+  it("e-mails a web link, changes the password and signs out other sessions", async () => {
+    const email = uniqueEmail("esqueceu")
+    const oldSession = await user(email)
+    expect((await requestReset(email)).statusCode).toBe(200)
+    const mail = mailer.last(email)
+    expect(mail?.subject).toBe("Redefinição de senha")
+    expect(mail?.text).toContain(`${BASE_URL}/redefinir-senha?token=`)
+
+    expect((await reset(tokenFor(email))).statusCode).toBe(200)
+    expect((await signIn(email)).statusCode).toBe(401)
+    expect((await signIn(email, NEW_PASSWORD)).statusCode).toBe(200)
+    expect((await officeOf(oldSession)).statusCode).toBe(401)
+  })
+
+  it("rejects a reused token", async () => {
+    const email = uniqueEmail("reuso")
+    await user(email)
+    await requestReset(email)
+    const token = tokenFor(email)
+    expect((await reset(token)).statusCode).toBe(200)
+    const again = await reset(token, `${NEW_PASSWORD}-2`)
+    expect(again.statusCode).toBe(400)
+    expect(problemSchema.parse(again.json()).code).toBe("INVALID_TOKEN")
+  })
+
+  it("rejects an expired token", async () => {
+    const email = uniqueEmail("expirado")
+    await user(email)
+    await requestReset(email)
+    await db.admin.query(
+      `update auth_verifications set expires_at = now() - interval '1 minute'
+        where identifier like 'reset-password:%'
+          and value = (select id::text from auth_users where email = $1)`,
+      [email],
+    )
+    const res = await reset(tokenFor(email))
+    expect(res.statusCode).toBe(400)
+    expect(problemSchema.parse(res.json()).code).toBe("INVALID_TOKEN")
+    expect((await signIn(email)).statusCode).toBe(200)
+  })
+
+  it("answers the same for an unknown e-mail and sends nothing", async () => {
+    const known = uniqueEmail("conhecido")
+    await user(known)
+    const unknown = uniqueEmail("desconhecido")
+    const a = await requestReset(known)
+    const b = await requestReset(unknown)
+    expect(b.statusCode).toBe(a.statusCode)
+    expect(b.body).toBe(a.body)
+    expect(mailer.last(unknown)).toBeUndefined()
+  })
+
+  it("answers 429 after too many requests for one e-mail", async () => {
+    const email = uniqueEmail("insistente")
+    for (let i = 0; i < CREDENTIAL_LIMITS.perEmail; i++) {
+      expect((await requestReset(email)).statusCode).toBe(200)
+    }
+    const limited = await requestReset(email)
+    expect(limited.statusCode).toBe(429)
+    expect(limited.headers["retry-after"]).toBeDefined()
+  })
+
+  it("answers 429 after too many reset submissions from one IP", async () => {
+    const ip = nextIp()
+    for (let i = 0; i < CREDENTIAL_LIMITS.perIp; i++) {
+      expect((await reset(`token-falso-${i}`, NEW_PASSWORD, ip)).statusCode).toBe(400)
+    }
+    expect((await reset("token-falso", NEW_PASSWORD, ip)).statusCode).toBe(429)
+  })
+})
+
 describe("offices and invitations (RF-01)", () => {
   let ownerEmail: string
   let owner: string

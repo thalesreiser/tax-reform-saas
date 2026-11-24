@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import fastifyCors from "@fastify/cors"
 import fastifyRateLimit from "@fastify/rate-limit"
 import fastifySwagger from "@fastify/swagger"
 import Fastify from "fastify"
@@ -13,6 +14,7 @@ import { LogMailer, type Mailer } from "./auth/mailer.js"
 import { registerAuth } from "./auth/plugin.js"
 import type { Config } from "./config.js"
 import { createDb } from "./db/client.js"
+import { configOriginPolicy, isAllowedOrigin } from "./origins.js"
 import { errorHandler, problem, sendProblem } from "./problem.js"
 import { auditRoutes } from "./routes/audit.js"
 import { healthRoutes } from "./routes/health.js"
@@ -59,13 +61,26 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
     done()
   })
 
+  // CORS for the web app only: any other origin gets no CORS headers (and its preflight a 404).
+  const origins = configOriginPolicy(config)
+  await base.register(fastifyCors, {
+    origin: (origin, callback) => {
+      callback(null, isAllowedOrigin(origin, origins))
+    },
+    credentials: true,
+    methods: ["GET", "POST"],
+    allowedHeaders: ["content-type"],
+    exposedHeaders: ["retry-after", REQUEST_ID_HEADER],
+    maxAge: 600,
+  })
+
   const db = createDb(config.DATABASE_URL)
   base.addHook("onClose", () => db.close())
 
   // In memory, per instance: fine for one API process; a shared store comes with scaling.
   await base.register(fastifyRateLimit, { global: false })
   const mailer = deps.mailer ?? new LogMailer(base.log, config.NODE_ENV === "production")
-  const auth = createAuth({ config, db, mailer, log: base.log })
+  const auth = createAuth({ config, db, mailer, log: base.log, origins })
   registerAuth(base, { auth, db, baseUrl: config.BETTER_AUTH_URL })
 
   const app = base.withTypeProvider<ZodTypeProvider>()

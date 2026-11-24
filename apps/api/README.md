@@ -114,7 +114,12 @@ turned into problem details with better-auth's `code`.
    (a random UUID) is the secret. It expires after 48 hours, is single-use and only the invited,
    verified e-mail can accept it (`POST /api/auth/organization/accept-invitation`
    `{ invitationId }`), joining the office with the invited role.
-4. **Active office**: a session starts in the user's oldest office; `organization/set-active`
+4. **Password reset** `POST /api/auth/request-password-reset` `{ email }` e-mails a link to
+   `WEB_URL/redefinir-senha?token=<token>` (valid 1 hour, single use); the page posts
+   `POST /api/auth/reset-password` `{ token, newPassword }`. The answer is the same whether the e-mail
+   exists or not. A reset signs out every session of the user; an expired or used token is a 400 with
+   `code: INVALID_TOKEN`.
+5. **Active office**: a session starts in the user's oldest office; `organization/set-active`
    switches to another office the user belongs to.
 
 ### Roles
@@ -138,9 +143,21 @@ membership is re-read on every request). Row-level security does the rest.
 
 - **Session cookie** `trs.session_token` (`__Secure-` prefix in production): signed, `HttpOnly`,
   `SameSite=Lax`, `Secure` in production; better-auth defaults of 7 days, refreshed daily. Requests
-  with cookies must come from `BETTER_AUTH_URL` or `WEB_URL` (origin check).
+  with cookies must come from `BETTER_AUTH_URL` or an allowed origin (origin check, below).
+- **CORS** (`@fastify/cors`, `src/origins.ts`): only `WEB_URL` and `CORS_EXTRA_ORIGINS` get CORS
+  headers, with credentials, methods `GET`/`POST`, header `content-type`, exposed `retry-after` and
+  `x-request-id`, preflight cached 10 minutes. Other origins get none. better-auth's
+  `trustedOrigins` uses the same list. `CORS_EXTRA_ORIGINS` takes exact origins and https patterns
+  whose `*` starts the host (`https://*-trs-web.thausreiser.workers.dev` for Cloudflare previews):
+  the `*` never matches a dot and the fixed part needs three labels, so look-alike hosts and whole
+  public suffixes are refused.
+- **Cross-site sign-in does not work on staging yet.** `trs-web.thausreiser.workers.dev` and
+  `trs-tax-api.fly.dev` are different sites (both `workers.dev` and `fly.dev` are public suffixes),
+  so the browser never sends the `SameSite=Lax` session cookie on the web app's `fetch` calls (and
+  blocks it as third-party). CORS works; sessions do not. Options under Pending.
 - **Rate limits** (`@fastify/rate-limit`, in memory per process): 120 requests per minute per IP on
-  `/api/auth/*`; sign-in, sign-up and verification e-mails 30 per IP and 5 per e-mail in 15 minutes,
+  `/api/auth/*`; sign-in, sign-up, verification e-mails, password-reset requests and submissions
+  30 per IP and 5 per e-mail in 15 minutes,
   then 429 with `Retry-After`. better-auth's own limiter is off (it keys on IP headers only).
 - **E-mail** goes through the `Mailer` interface. Only `LogMailer` exists: outside production it logs
   the whole message (follow links from the log); in production it logs only the subject, never the
@@ -148,7 +165,15 @@ membership is re-read on every request). Row-level security does the rest.
 
 ### Pending
 
-- E-mail provider (blocks production sign-up and invitations).
+- E-mail provider (blocks production sign-up, invitations and password reset; Resend recommended).
+- **Session cookie across sites** (blocks real sign-in from the web app):
+  1. **Own domain (recommended):** `app.<domain>` on Cloudflare and `api.<domain>` on Fly, with
+     better-auth `crossSubDomainCookies` on `<domain>`. Same site, so `SameSite=Lax` keeps working,
+     SSR sees the session and no third-party cookie is involved. Needs a domain and DNS.
+  2. **`SameSite=None; Secure` cookies** on the current hosts: works today in some browsers only;
+     Safari and Chrome's third-party cookie restrictions block them unless partitioned (CHIPS
+     `Partitioned`), which ties the cookie to the web site and still hides it from SSR. Weaker CSRF
+     defence (origin check only). Not done here.
 - Session lifetime, 2FA, social login, roles beyond owner and accountant.
 - Shared rate-limit store (database or Redis) with more than one API instance, and `trustProxy`
   once the host is known, so limits see the client IP.

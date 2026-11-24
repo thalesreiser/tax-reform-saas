@@ -20,6 +20,7 @@ describe("loadConfig", () => {
       TRUST_PROXY_HOPS: 0,
       ENGINE_TIMEOUT_MS: 30_000,
       REFERENCE_CACHE_TTL_SECONDS: 21_600,
+      CORS_EXTRA_ORIGINS: [],
     })
   })
 
@@ -69,11 +70,24 @@ describe("loadConfig", () => {
     ["BETTER_AUTH_SECRET", "too-short-secret"],
     ["BETTER_AUTH_URL", "ftp://auth.example"],
     ["WEB_URL", "not-a-url"],
+    ["CORS_EXTRA_ORIGINS", "https://*.dev"],
+    ["CORS_EXTRA_ORIGINS", "https://app.example.test/path"],
   ])("rejects %s=%s naming the variable but not the value", (name, value) => {
     const run = () => loadConfig({ ...REQUIRED, [name]: value })
     expect(run).toThrow(ConfigError)
     expect(run).toThrow(name)
     expect(run).not.toThrow(new RegExp(`"${value}"`))
+  })
+})
+
+describe("CORS_EXTRA_ORIGINS", () => {
+  it("parses exact origins and wildcard patterns", () => {
+    const [exact, pattern] = loadConfig({
+      ...REQUIRED,
+      CORS_EXTRA_ORIGINS: " https://Preview.Example.test , https://*-web.acct.workers.test",
+    }).CORS_EXTRA_ORIGINS
+    expect(exact).toBe("https://preview.example.test")
+    expect(pattern).toBeInstanceOf(RegExp)
   })
 })
 

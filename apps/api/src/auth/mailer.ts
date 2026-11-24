@@ -78,3 +78,16 @@ export function verificationMail(input: { to: string; url: string }): MailMessag
     ].join("\n\n"),
   }
 }
+
+export function resetPasswordMail(input: { to: string; url: string }): MailMessage {
+  return {
+    to: input.to,
+    subject: "Redefinição de senha",
+    text: [
+      "Recebemos um pedido para redefinir a senha da sua conta. Para escolher uma nova senha, acesse:",
+      input.url,
+      "O link vale por 1 hora e só pode ser usado uma vez. Ao redefinir, as outras sessões abertas são encerradas.",
+      "Se você não fez esse pedido, ignore esta mensagem: sua senha continua a mesma.",
+    ].join("\n\n"),
+  }
+}
