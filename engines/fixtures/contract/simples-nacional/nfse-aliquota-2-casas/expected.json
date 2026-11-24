@@ -1,0 +1,12 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".resolucaoAliquotas.itens[0].pCBSSN": "2.2154",
+    ".objetos[0].tribCalc.pCBSSN": "2.22",
+    ".objetos[0].tribCalc.pIBSSN": "0.03",
+    ".objetos[0].tribCalc.vCBSSN": "222.00",
+    ".objetos[0].tribCalc.vIBSSN": "3.00",
+    ".objetos[0].tribCalc.totalItem": "225.00"
+  }
+}

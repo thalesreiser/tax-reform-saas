@@ -1,0 +1,9 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".objetos[0].tribCalc.tpRBSN": "4",
+    ".objetos[0].tribCalc.vCBSSN": "0.00",
+    ".objetos[0].tribCalc.vCBSPendSusp": "11.61"
+  }
+}

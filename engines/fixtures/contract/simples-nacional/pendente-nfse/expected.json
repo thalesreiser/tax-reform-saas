@@ -1,0 +1,11 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".oper.regimeApuracao": "PENDENTE",
+    ".objetos[0].tribCalc.vCBSSN": "0.00",
+    ".objetos[0].tribCalc.vCBSPendSusp": "222.00",
+    ".objetos[0].tribCalc.vIBSPendSusp": "3.00",
+    ".objetos[0].tribCalc.totalItem": "0.00"
+  }
+}

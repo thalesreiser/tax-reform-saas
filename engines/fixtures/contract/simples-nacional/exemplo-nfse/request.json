@@ -1,0 +1,30 @@
+{
+  "id": "op-1",
+  "versao": "3.0.0",
+  "data": "2027-03-15",
+  "tpDoc": "91",
+  "opSimpNac": "3",
+  "regApIBSCBSSN": "1",
+  "regApTribSN": "1",
+  "aliquotasEfetivas": {
+    "fatorR": false,
+    "impedimentoSublimite": false,
+    "anexoIII": {
+      "pCBSSN": "2.3874",
+      "pIBSSN": "0.0263",
+      "semRedistribuicaoISS": { "pCBSSN": "2.3591", "pIBSSN": "0.0260" }
+    }
+  },
+  "itens": [
+    {
+      "numero": 1,
+      "cAtivSN": "12",
+      "cClassTrib": "000001",
+      "nbs": "114051000",
+      "baseCalculo": "10000.00",
+      "tribISSQN": "1",
+      "tpRetISSQN": "1",
+      "tpBM": "1"
+    }
+  ]
+}

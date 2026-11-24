@@ -1,0 +1,32 @@
+{
+  "endpoint": "regime-regular/observabilidade",
+  "status": 200,
+  "values": {
+    ".objetos[0].estadoItem": "CALCULO_SIMULADO",
+    ".objetos[1].estadoItem": "CALCULO_SIMULADO",
+    ".objetos[2].estadoItem": "CALCULO_SIMULADO",
+    ".objetos[2].tribCalc.IBSCBS.CST": "200",
+    ".objetos[2].tribCalc.IBSCBS.cClassTrib": "200028",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.vBC": "1200.00",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gIBSUF.pIBSUF": "0.05",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gIBSUF.gRed.pRedAliq": "60.00",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gIBSUF.gRed.pAliqEfet": "0.02",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gIBSUF.vIBSUF": "0.24",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gIBSMun.pIBSMun": "0.05",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gIBSMun.gRed.pRedAliq": "60.00",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gIBSMun.gRed.pAliqEfet": "0.02",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gIBSMun.vIBSMun": "0.24",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.vIBS": "0.48",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gCBS.pCBS": "8.80",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gCBS.gRed.pRedAliq": "60.00",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gCBS.gRed.pAliqEfet": "3.52",
+    ".objetos[2].tribCalc.IBSCBS.gIBSCBS.gCBS.vCBS": "42.24",
+    ".objetos[3].estadoItem": "INCONSISTENCIA_ENTRADA",
+    ".objetos[3].erros[0].code": "REG-011",
+    ".objetos[3].erros[0].pointer": "#/itens/3/ncm",
+    ".total.tribCalc.ISTot.vIS": "15.00",
+    ".total.tribCalc.IBSCBSTot.vBCIBSCBS": "1465.00",
+    ".total.tribCalc.IBSCBSTot.gIBS.vIBS": "0.64",
+    ".total.tribCalc.IBSCBSTot.gCBS.vCBS": "56.76"
+  }
+}

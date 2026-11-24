@@ -1,0 +1,13 @@
+{
+  "endpoint": "regime-regular/regime-geral",
+  "status": 200,
+  "values": {
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.vBC": "200.00",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gCBS.pCBS": "0.90",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gCBS.vCBS": "1.80",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSUF.pIBSUF": "0.10",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSUF.vIBSUF": "0.20",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSMun.pIBSMun": "0",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSMun.vIBSMun": "0"
+  }
+}

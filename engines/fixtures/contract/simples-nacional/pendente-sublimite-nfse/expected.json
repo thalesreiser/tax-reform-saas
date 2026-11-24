@@ -1,0 +1,11 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".oper.regimeApuracao": "PENDENTE_SUBLIMITE",
+    ".objetos[0].tribCalc.vIBSPendSusp": null,
+    ".objetos[0].tribCalc.pIBSSN": null,
+    ".objetos[0].tribCalc.vCBSPendSusp": "199.00",
+    ".resolucaoAliquotas.itens[0].regraAliquota": "ISS_FORA_DO_SIMPLES"
+  }
+}
