@@ -136,6 +136,9 @@ describe("GET /openapi.json", () => {
     expect(doc.openapi).toBe("3.1.0")
     expect(doc.info.version).toBe("1.2.3")
     expect(Object.keys(doc.paths)).toContain("/health")
+    expect(Object.keys(doc.paths)).toEqual(
+      expect.arrayContaining(["/v1/clients", "/v1/cnpj/{cnpj}"]),
+    )
     expect(Object.keys(doc.paths)).not.toContain("/openapi.json")
   })
 })

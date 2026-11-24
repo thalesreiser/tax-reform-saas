@@ -50,6 +50,13 @@
       "when": 1795458981459,
       "tag": "0006_supabase_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795458986459,
+      "tag": "0007_client_registry",
+      "breakpoints": true
     }
   ]
 }

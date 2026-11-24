@@ -1,0 +1,30 @@
+{
+  "cnpj": "11222333000181",
+  "razao_social": "EMPRESA FICTICIA DE TESTES LTDA",
+  "nome_fantasia": "LOJA EXEMPLO",
+  "descricao_tipo_de_logradouro": "RUA",
+  "logradouro": "RUA DOS TESTES",
+  "numero": "100",
+  "complemento": "",
+  "bairro": "CENTRO",
+  "municipio": "CIDADE EXEMPLO",
+  "uf": "SP",
+  "cep": "01000000",
+  "codigo_municipio_ibge": 3550308,
+  "cnae_fiscal": 4781400,
+  "cnae_fiscal_descricao": "Comércio varejista de artigos do vestuário e acessórios",
+  "cnaes_secundarios": [
+    { "codigo": 4782201, "descricao": "Comércio varejista de calçados" },
+    { "codigo": 0, "descricao": "" }
+  ],
+  "situacao_cadastral": 2,
+  "descricao_situacao_cadastral": "ATIVA",
+  "opcao_pelo_simples": true,
+  "opcao_pelo_mei": false,
+  "regime_tributario": [
+    { "ano": 2021, "forma_de_tributacao": "LUCRO PRESUMIDO" },
+    { "ano": 2019, "forma_de_tributacao": "LUCRO REAL" }
+  ],
+  "qsa": [{ "nome_socio": "PESSOA FICTICIA" }],
+  "email": "contato@example.test"
+}

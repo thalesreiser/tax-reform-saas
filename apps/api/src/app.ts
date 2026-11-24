@@ -13,10 +13,12 @@ import { createAuth } from "./auth/auth.js"
 import { LogMailer, type Mailer } from "./auth/mailer.js"
 import { registerAuth } from "./auth/plugin.js"
 import type { Config } from "./config.js"
+import { CnpjLookup, brasilApiProvider } from "./clients/lookup.js"
 import { createDb } from "./db/client.js"
 import { configOriginPolicy, isAllowedOrigin } from "./origins.js"
 import { errorHandler, problem, sendProblem } from "./problem.js"
 import { auditRoutes } from "./routes/audit.js"
+import { clientRoutes } from "./routes/clients.js"
 import { healthRoutes } from "./routes/health.js"
 import { officeRoutes } from "./routes/office.js"
 import { referenceRoutes } from "./routes/reference.js"
@@ -34,6 +36,8 @@ const REDACTED = [
 export interface AppDeps {
   /** E-mail transport; defaults to the log transport (no provider yet). */
   mailer?: Mailer
+  /** CNPJ lookup; defaults to BrasilAPI (tests pass a fake). */
+  cnpjLookup?: CnpjLookup
 }
 
 /**
@@ -68,7 +72,7 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
       callback(null, isAllowedOrigin(origin, origins))
     },
     credentials: true,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
     allowedHeaders: ["content-type"],
     exposedHeaders: ["retry-after", REQUEST_ID_HEADER],
     maxAge: 600,
@@ -97,6 +101,7 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
         { name: "system", description: "Health and metadata" },
         { name: "office", description: "The signed-in user's office" },
         { name: "reference", description: "Reference data of the official engines (cached)" },
+        { name: "clients", description: "Client companies of the office and CNPJ lookup" },
       ],
     },
     transform: jsonSchemaTransform,
@@ -111,6 +116,19 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
     engineUrl: config.ENGINE_REGIME_REGULAR_URL,
     timeoutMs: config.ENGINE_TIMEOUT_MS,
     ttlSeconds: config.REFERENCE_CACHE_TTL_SECONDS,
+  })
+
+  await app.register(clientRoutes, {
+    db,
+    authenticate: [app.requireOffice],
+    lookup:
+      deps.cnpjLookup ??
+      new CnpjLookup(
+        brasilApiProvider({
+          baseUrl: config.CNPJ_LOOKUP_URL,
+          timeoutMs: config.CNPJ_LOOKUP_TIMEOUT_MS,
+        }),
+      ),
   })
 
   app.get("/openapi.json", { schema: { hide: true } }, () => app.swagger())
