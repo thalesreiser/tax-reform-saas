@@ -52,3 +52,13 @@ engineStrict: true
 # Packages allowed to run install scripts (pnpm 10 blocks them by default).
 onlyBuiltDependencies:
   - esbuild
+
+# Security fixes for transitive dependencies that Dependabot cannot update in a pnpm workspace.
+# Remove each line once every consumer depends on a patched version.
+overrides:
+  # GHSA for esbuild <= 0.24.2 and < 0.28.1 (via drizzle-kit, @esbuild-kit/core-utils, @intlify/bundle-utils)
+  "esbuild@<0.28.1": 0.28.2
+  # glob 9.0.0 - 14.0.1 (via js-beautify)
+  "glob@>=9.0.0 <14.0.2": 14.0.6
+  # minimatch 7.0.0 - 11.0.0 (via glob, editorconfig, readdir-glob)
+  "minimatch@>=7.0.0 <11.0.1": 11.0.9
