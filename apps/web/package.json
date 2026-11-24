@@ -10,7 +10,9 @@
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:cloudflare": "NITRO_PRESET=cloudflare_module nuxt build",
+    "deploy:cloudflare": "wrangler deploy"
   },
   "dependencies": {
     "@fontsource-variable/outfit": "catalog:",
@@ -34,6 +36,7 @@
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "vitest": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "wrangler": "catalog:"
   }
 }

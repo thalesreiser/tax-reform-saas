@@ -56,6 +56,8 @@ jobs:
           restore-keys: turbo-${{ runner.os }}-${{ github.job }}-${{ hashFiles('pnpm-lock.yaml') }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # Same build Cloudflare Workers Builds runs for the web app (wrangler.jsonc).
+      - run: pnpm --filter @trs/web build:cloudflare
 
   # Database-backed tests (`test:integration` scripts). The first ones arrive with BE-01.2; until then
   # Turborepo finds no task and the job only proves the database service starts.
