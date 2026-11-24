@@ -1,0 +1,35 @@
+# Fly.io app of the official simples-nacional engine, staging (EST-03.2, ADR 004, ADR 008). Deployed by
+# .github/workflows/deploy-staging.yml with the image already tested and published to GHCR, copied to
+# registry.fly.io/trs-engine-sn:<engine tag>. The engine is never modified.
+#
+# Private: no public IP. The API reaches it at http://trs-engine-sn.flycast:8082 (Flycast, a private
+# IPv6 allocated with `fly ips allocate-v6 --private`), so the Fly proxy can start a stopped machine;
+# a .internal address would not wake it. The workflow fails if a public IP exists.
+app = "trs-engine-sn"
+primary_region = "gru"
+
+[env]
+  # Same JVM sizing as engines/Dockerfile and engines/compose.yml: heap derived from the 768 MB VM.
+  JDK_JAVA_OPTIONS = "-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -Xss512k -XX:+ExitOnOutOfMemoryError -Djava.io.tmpdir=/tmp"
+
+[http_service]
+  internal_port = 8082
+  force_https = false
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+# The engine's own management endpoint (port 9103, ADR 004). Start-up takes about 25 s under a
+# 768 MB limit and longer on a shared CPU, hence the grace period.
+[checks.health]
+  type = "http"
+  port = 9103
+  method = "GET"
+  path = "/health"
+  interval = "15s"
+  timeout = "5s"
+  grace_period = "90s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "768mb"
