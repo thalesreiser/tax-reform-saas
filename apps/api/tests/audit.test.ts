@@ -16,6 +16,7 @@ const VALID: Record<AuditAction, Record<string, unknown>> = {
   "office.updated": { fields: ["name"] },
   "member.invited": { role: "accountant" },
   "member.invitation_canceled": {},
+  "member.invitation_resent": {},
   "member.invitation_rejected": {},
   "member.joined": { role: "accountant", invitationId: ID },
   "member.role_changed": { from: "accountant", to: "owner" },

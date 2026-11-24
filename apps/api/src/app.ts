@@ -20,7 +20,9 @@ import { errorHandler, problem, sendProblem } from "./problem.js"
 import { auditRoutes } from "./routes/audit.js"
 import { clientRoutes } from "./routes/clients.js"
 import { healthRoutes } from "./routes/health.js"
+import { memberRoutes } from "./routes/members.js"
 import { officeRoutes } from "./routes/office.js"
+import { officeSettingsRoutes } from "./routes/office-settings.js"
 import { referenceRoutes } from "./routes/reference.js"
 
 export const REQUEST_ID_HEADER = "x-request-id"
@@ -117,7 +119,7 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
       },
       tags: [
         { name: "system", description: "Health and metadata" },
-        { name: "office", description: "The signed-in user's office" },
+        { name: "office", description: "The signed-in user's office: settings, logo, members" },
         { name: "reference", description: "Reference data of the official engines (cached)" },
         { name: "clients", description: "Client companies of the office and CNPJ lookup" },
       ],
@@ -127,6 +129,8 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
 
   await app.register(healthRoutes, { version: config.APP_VERSION })
   await app.register(officeRoutes, { db })
+  await app.register(officeSettingsRoutes, { db })
+  await app.register(memberRoutes, { db, auth })
   await app.register(auditRoutes, { db })
   await app.register(referenceRoutes, {
     prefix: "/v1/reference",
