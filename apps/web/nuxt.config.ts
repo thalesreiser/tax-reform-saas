@@ -12,6 +12,10 @@ export default defineNuxtConfig({
     public: {
       // Public URL of the API (better-auth under /api/auth); NUXT_PUBLIC_API_URL at runtime.
       apiUrl: "http://localhost:3000",
+      // Error tracking (EST-03.3): off unless NUXT_PUBLIC_SENTRY_DSN is set. See deploy/README.md.
+      sentryDsn: "",
+      sentryEnvironment: "development",
+      appVersion: "dev",
     },
   },
 

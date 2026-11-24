@@ -41,7 +41,10 @@ share view and the public landing pages arrive here task by task (FE tracks).
   the skip link, `header`, `main#conteudo` and `footer` landmarks and `<html lang="pt-BR">`. Each
   page has exactly one `h1`.
 - **Errors:** the error page shows the status and a generic message, never `error.message`, which
-  can carry internal details.
+  can carry internal details. Browser and Worker errors go to Sentry only when
+  `NUXT_PUBLIC_SENTRY_DSN` is set (`app/plugins/sentry.client.ts`, `server/plugins/sentry.ts`,
+  scrubbed by `shared/utils/sentry-scrub.ts`); without it the SDK chunk is never loaded. See
+  `deploy/README.md`, Observability.
 - **Types and lint:** `nuxt prepare` runs on install and generates `.nuxt/` (types and the
   referenced tsconfig files). `pnpm typecheck` runs `nuxt typecheck` (vue-tsc); ESLint uses the
   shared type-aware config plus `eslint-plugin-vue` for `.vue` files.

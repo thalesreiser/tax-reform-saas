@@ -17,6 +17,7 @@
     "@fastify/cors": "catalog:",
     "@fastify/rate-limit": "catalog:",
     "@fastify/swagger": "catalog:",
+    "@sentry/node": "catalog:",
     "@trs/engine-client": "workspace:*",
     "@trs/tax-legacy": "workspace:*",
     "better-auth": "catalog:",

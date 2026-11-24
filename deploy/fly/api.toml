@@ -15,6 +15,8 @@ primary_region = "gru"
   # Private engines through Flycast: the Fly proxy starts a stopped engine machine on the first call.
   ENGINE_REGIME_REGULAR_URL = "http://trs-engine-rr.flycast:8080"
   ENGINE_SIMPLES_NACIONAL_URL = "http://trs-engine-sn.flycast:8082"
+  # Sentry: off until the SENTRY_DSN Fly secret exists (deploy/README.md, Observability).
+  SENTRY_ENVIRONMENT = "staging"
   # APP_VERSION is set per deploy (`--env APP_VERSION=<git sha>`).
 
 [http_service]
