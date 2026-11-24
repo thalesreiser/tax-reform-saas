@@ -58,7 +58,6 @@ export function initSentry(config: Config): boolean {
     environment: config.SENTRY_ENVIRONMENT,
     release: config.APP_VERSION,
     tracesSampleRate: config.SENTRY_TRACES_SAMPLE_RATE,
-    sendDefaultPii: false,
     maxBreadcrumbs: 0,
     beforeSend: scrubEvent,
     beforeSendTransaction: (event) => {

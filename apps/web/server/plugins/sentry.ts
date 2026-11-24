@@ -12,7 +12,6 @@ export default defineNitroPlugin(
         dsn,
         environment: process.env.NUXT_PUBLIC_SENTRY_ENVIRONMENT ?? "development",
         release: process.env.NUXT_PUBLIC_APP_VERSION ?? "dev",
-        sendDefaultPii: false,
         tracesSampleRate: 0,
         maxBreadcrumbs: 0,
         beforeSend: (event) => scrubSentryEvent(event),

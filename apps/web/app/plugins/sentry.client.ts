@@ -13,7 +13,6 @@ export default defineNuxtPlugin({
       dsn: sentryDsn,
       environment: sentryEnvironment,
       release: appVersion,
-      sendDefaultPii: false,
       tracesSampleRate: 0,
       maxBreadcrumbs: 0,
       beforeSend: (event) => scrubSentryEvent(event),
