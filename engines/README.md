@@ -98,7 +98,9 @@ the upstream integration tests that assert values, all at the pinned tags. Each 
 a per-case diff on failure.
 
 To add a case: create the folder with the three files, assert only what the upstream example or test
-asserts, and link the exact source. A value without an upstream source does not belong here.
+asserts, and link the exact source. A value without an upstream source does not belong here, and neither does an upstream test marked
+`@Disabled` (for example `Teste_510002_1` and `Teste_620001_1` at 1.7.2: the engine answers 404 and
+422 for them).
 
 **A contract test failing after a tag bump** means the engine changed its results. Read the upstream
 `CHANGELOG.md` and the changed example or test first; update `expected.json` only to what upstream
