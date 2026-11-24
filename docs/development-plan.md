@@ -70,13 +70,13 @@ At 25 h per week the M scope takes 12 weeks; at 20 h per week, 15 weeks (Q-03).
 
 | ID | Task | Req. | Prio. | Est. | Depends on |
 |---|---|---|---|---|---|
-| EST-03.1 | Accounts and environments (manual, Thales) | — | M | 3 h | DEC-01 |
+| EST-03.1 | Accounts and environments (manual, Thales) | — | M | 3 h | — |
 | EST-03.2 | Deploy pipeline: web previews and API + engines staging | RNF-08 | M | 5 h | EST-03.1, EST-02.3, MOT-01.2 |
 | EST-03.3 | Observability | RNF-09 | M | 3 h | EST-03.2 |
 | EST-03.4 | Backups and production readiness checklist | RNF-02 | M | 3 h | EST-03.3 |
 
-- **EST-03.1** Cloudflare · container host · Neon · GHCR · domain · secrets in the host vault
-- **EST-03.2** Cloudflare PR preview · staging compose (API, two engines) · migrations on deploy
+- **EST-03.1** Cloudflare · Google Cloud project with billing and budget alert · Supabase project in `sa-east-1` · domain · secrets in each host's secret store (ADR 007)
+- **EST-03.2** Cloudflare PR preview · Artifact Registry remote repository for GHCR · Cloud Run services (API public, engines internal via Direct VPC egress) · migrations on deploy
 - **EST-03.3** Structured logs · Sentry (web, API, extension) · uptime checks
 - **EST-03.4** Postgres backups and restore test · runbook · rollback
 
