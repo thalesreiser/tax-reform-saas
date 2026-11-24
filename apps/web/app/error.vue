@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NuxtError } from "#app"
+import { pt_br } from "@nuxt/ui/locale"
 
 const props = defineProps<{ error: NuxtError }>()
 const { t } = useI18n()
@@ -20,7 +21,7 @@ async function backHome() {
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="pt_br">
     <NuxtLayout>
       <UContainer class="py-12 sm:py-20">
         <section class="surface-glass p-8 sm:p-12">

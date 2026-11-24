@@ -187,6 +187,45 @@ describe.each<Mode>(["light", "dark"])("Aurora tokens, %s mode", (mode) => {
   it("the focus ring (primary) reaches 3:1 against every surface", () => {
     expect(worst(opaque("--ui-primary", mode), surfaces(mode))).toBeGreaterThanOrEqual(3)
   })
+
+  // FE-UX-01 pairs: auth brand panel, header actions, password field and dashboard tiles.
+  it("brand panel and lead KPI tile: white text and chart bars on `surface-brand`", () => {
+    const panel = gradient(["--aurora-brand-from", "--aurora-brand-strong-to"], mode)
+    expect(worst(opaque("--aurora-on-brand", mode), panel)).toBeGreaterThanOrEqual(TEXT)
+  })
+
+  it.each(["--ui-text-highlighted", "--ui-text-muted"])(
+    "%s (KPI tile labels and values) reaches 4.5:1 on a glass tile",
+    (token) => {
+      const page = gradient(["--aurora-page-from", "--aurora-page-via", "--aurora-page-to"], mode)
+      const tiles = [
+        ...page.map((p) => over(color("--aurora-glass", mode), p)),
+        opaque("--aurora-glass-opaque", mode),
+      ]
+      expect(worst(opaque(token, mode), tiles)).toBeGreaterThanOrEqual(TEXT)
+    },
+  )
+
+  it("header ghost actions, the account menu and the 'Em breve' badge on the elevated grey", () => {
+    // Nuxt UI: neutral ghost buttons hover to `bg-elevated`; the neutral subtle badge sits on it.
+    const elevated =
+      mode === "light" ? "var(--ui-color-neutral-100)" : "var(--ui-color-neutral-800)"
+    expect(contrast(opaque("--ui-text", mode), opaque(elevated, mode))).toBeGreaterThanOrEqual(TEXT)
+  })
+
+  it("outline primary button text reaches 4.5:1 at rest and on its 10% hover tint", () => {
+    // Hover text shade set in app.config.ts (the resting violet drops to 3.99:1 on the tint).
+    const primary = color("--ui-primary", mode)
+    const hoverText = opaque(`var(--ui-color-primary-${hoverShade[mode].primary})`, mode)
+    const hovered = surfaces(mode).map((s) => over({ rgb: primary.rgb, alpha: 0.1 }, s))
+    expect(worst(primary.rgb, surfaces(mode))).toBeGreaterThanOrEqual(TEXT)
+    expect(worst(hoverText, hovered)).toBeGreaterThanOrEqual(TEXT)
+  })
+
+  it("the password toggle icon (muted) reaches 3:1 on the input background", () => {
+    const input = opaque("--ui-bg", mode)
+    expect(contrast(opaque("--ui-text-muted", mode), input)).toBeGreaterThanOrEqual(3)
+  })
 })
 
 describe("documented adjustments", () => {

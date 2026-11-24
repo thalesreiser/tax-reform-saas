@@ -87,6 +87,15 @@ export type EmailInput = z.output<ReturnType<typeof emailSchema>>
 export type OfficeInput = z.output<ReturnType<typeof officeSchema>>
 export type NewPasswordInput = z.output<ReturnType<typeof newPasswordSchema>>
 
+/** Live hint under a new-password field: the minimum, what is missing, or that it is reached. */
+export function passwordHint(length: number): { key: string; count: number } {
+  if (length === 0) return { key: "auth.fields.passwordHelp", count: 0 }
+  const missing = PASSWORD_MIN_LENGTH - length
+  return missing > 0
+    ? { key: "auth.fields.passwordMissing", count: missing }
+    : { key: "auth.fields.passwordOk", count: 0 }
+}
+
 function field(source: unknown, key: string): unknown {
   return typeof source === "object" && source !== null && key in source
     ? (source as Record<string, unknown>)[key]

@@ -58,12 +58,7 @@ async function resend() {
         <UInput v-model="state.email" type="email" autocomplete="email" class="w-full" />
       </UFormField>
       <UFormField :label="t('auth.fields.password')" name="password" required>
-        <UInput
-          v-model="state.password"
-          type="password"
-          autocomplete="current-password"
-          class="w-full"
-        />
+        <PasswordInput v-model="state.password" autocomplete="current-password" />
       </UFormField>
       <ULink to="/esqueci-senha" class="text-sm">{{ t("auth.signIn.forgot") }}</ULink>
       <UButton type="submit" block size="lg" :loading="loading">
