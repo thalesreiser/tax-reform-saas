@@ -18,6 +18,8 @@ describe("loadConfig", () => {
       LOG_LEVEL: "info",
       APP_VERSION: "dev",
       TRUST_PROXY_HOPS: 0,
+      ENGINE_TIMEOUT_MS: 30_000,
+      REFERENCE_CACHE_TTL_SECONDS: 21_600,
     })
   })
 
