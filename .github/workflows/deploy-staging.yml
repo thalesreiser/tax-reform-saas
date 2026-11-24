@@ -18,8 +18,8 @@ permissions:
   contents: read
 
 env:
-  # The commit CI tested (workflow_run) or the dispatched one.
-  DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+  # Always the trusted head of the default branch (develop), never a ref taken from the event.
+  DEPLOY_SHA: ${{ github.sha }}
   FLYCTL_VERSION: 0.5.16
 
 jobs:
@@ -27,7 +27,8 @@ jobs:
     name: Migrate the Supabase database
     if: &deployable >-
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'develop') ||
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'develop' &&
+      github.event.workflow_run.head_sha == github.sha) ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -35,7 +36,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.DEPLOY_SHA }}
           persist-credentials: false
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -69,19 +69,17 @@ jobs:
             app: trs-engine-rr
             config: deploy/fly/engine-rr.toml
             tag_var: REGIME_REGULAR_TAG
-            token: FLY_TOKEN_ENGINE_RR
           - name: simples-nacional
             app: trs-engine-sn
             config: deploy/fly/engine-sn.toml
             tag_var: SIMPLES_NACIONAL_TAG
-            token: FLY_TOKEN_ENGINE_SN
     env:
       APP: ${{ matrix.engine.app }}
-      FLY_API_TOKEN: ${{ secrets[matrix.engine.token] }}
+      # Only the token this engine needs is exposed (no dynamic secrets[...] lookup).
+      FLY_API_TOKEN: ${{ matrix.engine.app == 'trs-engine-rr' && secrets.FLY_TOKEN_ENGINE_RR || secrets.FLY_TOKEN_ENGINE_SN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.DEPLOY_SHA }}
           persist-credentials: false
       - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
         with:
@@ -150,7 +148,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.DEPLOY_SHA }}
           persist-credentials: false
       - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
         with:
