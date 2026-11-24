@@ -64,8 +64,8 @@ describe("dashboard components", () => {
     const items = empty.findAll("li")
     expect(items[0]?.classes()).toContain("surface-brand")
     expect(items[0]?.attributes("aria-current")).toBe("step")
-    expect(empty.findAll("[aria-disabled=true]")).toHaveLength(4)
-    expect(empty.find("a").exists()).toBe(false)
+    expect(empty.findAll("[aria-disabled=true]")).toHaveLength(3)
+    expect(empty.findAll("a").map((a) => a.attributes("href"))).toEqual(["/clientes/novo"])
 
     const view = emptyDashboard()
     view.progress.clients = 1

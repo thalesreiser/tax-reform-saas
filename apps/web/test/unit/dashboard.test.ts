@@ -16,7 +16,8 @@ describe("dashboard view model", () => {
     expect(view.recentSimulations).toEqual([])
     const steps = onboardingSteps(view)
     expect(steps.map((s) => s.id)).toEqual(["client", "profile", "simulation", "team"])
-    expect(steps.every((s) => !s.done && s.to === null)).toBe(true)
+    expect(steps.every((s) => !s.done)).toBe(true)
+    expect(steps.map((s) => s.to)).toEqual(["/clientes/novo", null, null, null])
     expect(nextStep(steps)?.id).toBe("client")
   })
 
@@ -28,8 +29,11 @@ describe("dashboard view model", () => {
     expect(nextStep(onboardingSteps(view))).toBeUndefined()
   })
 
-  it("links only the dashboard until the other pages exist", () => {
-    expect(NAV_ITEMS.filter((i) => i.to !== null).map((i) => i.id)).toEqual(["dashboard"])
+  it("links only the pages that exist", () => {
+    expect(NAV_ITEMS.filter((i) => i.to !== null).map((i) => i.id)).toEqual([
+      "dashboard",
+      "clients",
+    ])
   })
 
   it.each([

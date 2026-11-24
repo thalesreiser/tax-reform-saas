@@ -214,5 +214,89 @@
       "description": "Dê um nome ao seu escritório para começar.",
       "submit": "Criar escritório"
     }
+  },
+  "clients": {
+    "notInformed": "Não informado",
+    "regimes": {
+      "mei": "MEI",
+      "simples_nacional": "Simples Nacional",
+      "unknown": "Não informado pela fonte"
+    },
+    "fields": {
+      "name": "Razão social / nome fantasia",
+      "cnpj": "CNPJ",
+      "cnpjHelp": "Números ou letras e números (CNPJ alfanumérico). Os dados da empresa são preenchidos automaticamente.",
+      "cnpjLocked": "O CNPJ não pode ser alterado.",
+      "legalName": "Razão social",
+      "tradeName": "Nome fantasia",
+      "notes": "Observações",
+      "notesHelp": "Visíveis apenas para o seu escritório.",
+      "status": "Situação cadastral",
+      "regime": "Regime informado",
+      "city": "Município"
+    },
+    "validation": {
+      "cnpjInvalid": "CNPJ inválido. Confira os caracteres digitados.",
+      "legalNameRequired": "Informe a razão social.",
+      "tooLong": "Use no máximo {max} caracteres."
+    },
+    "lookup": {
+      "loading": "Consultando o CNPJ na Receita…",
+      "filled": "Dados preenchidos pela Receita via BrasilAPI em {at}.",
+      "regimeNote": "O regime informado pela fonte é só uma referência: você confirma o regime tributário no perfil fiscal do cliente."
+    },
+    "errors": {
+      "cnpjNotFound": "CNPJ não encontrado no cadastro da Receita. Preencha os dados manualmente.",
+      "lookupUnavailable": "O serviço de consulta de CNPJ está indisponível no momento. Preencha os dados manualmente.",
+      "rateLimited": "Muitas consultas em pouco tempo. Aguarde um minuto e tente novamente.",
+      "duplicate": "Este CNPJ já está cadastrado no seu escritório.",
+      "openExisting": "Abrir o cliente existente",
+      "notFound": "Cliente não encontrado. Ele pode ter sido excluído.",
+      "network": "Não foi possível conectar. Verifique sua internet e tente novamente.",
+      "generic": "Algo deu errado. Tente novamente em instantes."
+    },
+    "list": {
+      "title": "Clientes",
+      "description": "Empresas atendidas pelo seu escritório.",
+      "create": "Cadastrar cliente",
+      "search": "Buscar cliente",
+      "searchPlaceholder": "Nome ou início do CNPJ",
+      "loading": "Carregando clientes…",
+      "count": "Nenhum cliente encontrado. | {n} cliente encontrado. | {n} clientes encontrados.",
+      "retry": "Tentar novamente",
+      "empty": "Nenhum cliente cadastrado ainda.",
+      "emptyHint": "Cadastre o primeiro cliente pelo CNPJ: os dados da empresa são preenchidos automaticamente.",
+      "noResults": "Nenhum cliente encontrado para “{q}”.",
+      "caption": "Clientes do escritório",
+      "actions": "Ações"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Excluir",
+      "editNamed": "Editar {name}",
+      "deleteNamed": "Excluir {name}"
+    },
+    "new": {
+      "title": "Novo cliente",
+      "description": "Digite o CNPJ: buscamos razão social, nome fantasia e situação cadastral na Receita.",
+      "done": "Cliente cadastrado."
+    },
+    "edit": {
+      "title": "Cliente"
+    },
+    "form": {
+      "create": "Cadastrar cliente",
+      "save": "Salvar alterações",
+      "saved": "Alterações salvas.",
+      "back": "Voltar para a lista"
+    },
+    "delete": {
+      "title": "Excluir cliente",
+      "confirm": "Excluir {name}? Esta ação não pode ser desfeita.",
+      "audit": "A exclusão fica registrada no histórico de auditoria do escritório.",
+      "cancel": "Cancelar",
+      "submit": "Excluir cliente",
+      "done": "{name} foi excluído."
+    }
   }
 }
