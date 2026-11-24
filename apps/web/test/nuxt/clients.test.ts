@@ -54,7 +54,7 @@ afterEach(() => {
   document.body.innerHTML = ""
 })
 
-const input = (w: Awaited<ReturnType<typeof mountSuspended>>, name: string) =>
+const input = (w: { find: (selector: string) => { element: Element } }, name: string) =>
   w.find(`[name="${name}"]`).element as HTMLInputElement
 
 describe("client form", () => {

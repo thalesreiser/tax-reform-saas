@@ -303,7 +303,7 @@ describe("client screens (server-rendered, mocked API)", () => {
 
   it("lists clients with formatted CNPJs, status and the regime the registry reported", async () => {
     const html = await page("/clientes", COOKIE)
-    expect(html.match(/<h1/g)).toHaveLength(1)
+    expect(html.match(/<h1\b/g)).toHaveLength(1)
     const table = html.slice(html.indexOf("<table"), html.indexOf("</table>"))
     expect(table).toMatch(/<caption[^>]*>\s*Clientes do escritório/)
     expect(table).toContain("Padaria Exemplo Ltda")
