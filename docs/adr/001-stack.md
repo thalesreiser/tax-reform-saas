@@ -35,13 +35,13 @@ Option 1.
 | API | Fastify, OpenAPI 3.1, Scalar docs, problem details (RFC 9457) |
 | Current-tax engine | `packages/tax-legacy`, pure TypeScript, decimal arithmetic, rule tables versioned by validity date |
 | Simulation | `packages/simulation`, combines the current-tax engine, the transition schedule and the official engines |
-| Database | Postgres (Supabase, see ADR 007), Drizzle ORM and migrations, row-level security per office |
+| Database | Postgres (Supabase, see ADR 008), Drizzle ORM and migrations, row-level security per office |
 | Auth | better-auth (organizations, roles, invitations) |
 | Web | Nuxt 4 (dashboard, simulator, share view, landing) |
 | Extension | WXT (Manifest V3) + Vue, Chrome and Edge first |
 | SDK | TypeScript generated from the OpenAPI spec; PHP after the MVP |
 | Billing | Asaas (Pix, boleto, card, subscriptions) |
-| Hosting | Web on Cloudflare with PR previews; API and engines on Google Cloud Run (ADR 007) |
+| Hosting | Web on Cloudflare with PR previews; API and engines on Fly.io, region São Paulo (ADR 008) |
 | Observability | Structured logs, Sentry, uptime checks |
 
 ## Consequences
