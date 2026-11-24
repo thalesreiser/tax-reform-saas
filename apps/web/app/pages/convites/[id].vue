@@ -1,9 +1,18 @@
 <script setup lang="ts">
 // Target of the invitation e-mail (`WEB_URL/convites/<id>`). The API shows an invitation only to
 // the signed-in, verified invitee, so anonymous visitors are asked to sign in or sign up first.
+// The session is loaded before rendering, so the header already shows the signed-in actions.
+definePageMeta({
+  middleware: [
+    async () => {
+      await useAuth().refreshSession()
+    },
+  ],
+})
+
 const { t } = useI18n()
 const route = useRoute()
-const { session, refreshSession, getInvitation, acceptInvitation, signOut } = useAuth()
+const { session, getInvitation, acceptInvitation, signOut } = useAuth()
 const describe = useAuthMessage()
 
 const id = String(route.params.id)
@@ -12,7 +21,7 @@ const here = { redirect: `/convites/${encodeURIComponent(id)}` }
 useHead({ title: t("auth.invitation.title") })
 
 const { data } = await useAsyncData(`invitation:${id}`, async () => {
-  if ((await refreshSession()) === null) return { invitation: null, error: null }
+  if (session.value === null) return { invitation: null, error: null }
   try {
     return { invitation: await getInvitation(id), error: null }
   } catch (e) {
@@ -33,6 +42,8 @@ async function accept() {
   acceptError.value = null
   try {
     await acceptInvitation(id)
+    // The header may have loaded "no office yet" before the invitation made one active.
+    await refreshNuxtData("office")
     await navigateTo("/painel")
   } catch (e) {
     acceptError.value = describe(authErrorMessage(e, "auth.errors.invitationUnavailable"))

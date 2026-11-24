@@ -19,6 +19,13 @@ export default defineAppConfig({
             "hover:bg-primary-600 active:bg-primary-600 dark:hover:bg-primary-300 dark:active:bg-primary-300",
         },
         {
+          // Outline buttons tint on hover (`bg-primary/10`); the text moves to the next shade.
+          color: "primary",
+          variant: "outline",
+          class:
+            "hover:text-primary-600 active:text-primary-600 dark:hover:text-primary-300 dark:active:text-primary-300",
+        },
+        {
           color: "secondary",
           variant: "solid",
           class:

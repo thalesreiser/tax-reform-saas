@@ -215,6 +215,18 @@ body {
   color: var(--aurora-on-brand);
 }
 
+/* Highlighted card (brand panel, lead KPI): the strong gradient with white text, glass shape. */
+@utility surface-brand {
+  background-image: linear-gradient(
+    140deg,
+    var(--aurora-brand-from),
+    var(--aurora-brand-strong-to)
+  );
+  color: var(--aurora-on-brand);
+  border-radius: calc(var(--ui-radius) * 2);
+  box-shadow: var(--aurora-glass-shadow);
+}
+
 @utility pill-gain {
   background-color: var(--aurora-gain-bg);
   color: var(--aurora-gain-text);
@@ -225,6 +237,22 @@ body {
   background-color: var(--aurora-increase-bg);
   color: var(--aurora-increase-text);
   border-radius: calc(infinity* 1px);
+}
+
+/* Entrance of cards and tiles: a short fade and rise, off under reduced motion. */
+@keyframes aurora-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@utility motion-enter {
+  animation: aurora-enter 180ms ease-out both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

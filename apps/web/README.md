@@ -9,8 +9,8 @@ share view and the public landing pages arrive here task by task (FE tracks).
 | `app/app.config.ts`       | App config: placeholder product name (`appName`), Nuxt UI theme |
 | `app/assets/css/main.css` | Aurora theme: palettes, semantic tokens, utilities              |
 | `app/theme/aurora.ts`     | Nuxt UI semantic colour -> palette name                         |
-| `app/components/`         | Shared components (`AppWordmark`, `AuthCard`)                   |
-| `app/composables/`        | `useAuth` (API auth calls), `useAuthMessage`                    |
+| `app/components/`         | Shared components (wordmark, account menu, auth card and panel) |
+| `app/composables/`        | `useAuth` (API auth calls), `useAuthMessage`, `useOffice`       |
 | `app/middleware/auth.ts`  | Route middleware: anonymous users go to `/entrar`               |
 | `app/utils/auth.ts`       | Form schemas, API error -> message key, safe redirects          |
 | `app/layouts/default.vue` | Base shell: skip link, header, main landmark, footer            |
@@ -60,9 +60,13 @@ share view and the public landing pages arrive here task by task (FE tracks).
 - **Utilities:** `surface-glass` (translucent card with blur; opaque white or night card when
   `backdrop-filter` is unsupported, or with `prefers-reduced-transparency: reduce` or
   `prefers-contrast: more`), `bg-brand` (decorative gradient, never under text), `bg-brand-strong`
-  (gradient safe for white text), `pill-gain` and `pill-increase`, `shadow-glass`. Animations and
-  transitions are cut under `prefers-reduced-motion: reduce`.
-- **Numbers** use `tabular-nums`.
+  (gradient safe for white text), `surface-brand` (card on the strong gradient: brand panel, lead
+  KPI), `pill-gain` and `pill-increase`, `shadow-glass`, `motion-enter` (180 ms fade and rise of
+  cards and tiles). Animations and transitions are cut under `prefers-reduced-motion: reduce`.
+- **Numbers** use `tabular-nums`: Outfit's Latin subset has the `tnum` feature (every digit
+  590 units wide), so no separate numeric font is needed.
+- **Header:** colour-mode toggle on every page; "Entrar" and "Criar conta" when signed out (minus
+  the current page's), office name and account menu ("Sair") when signed in.
 - **Adding a colour:** add an 11-shade hex scale in `@theme static`, map it in `app/theme/aurora.ts`
   (a new semantic name also needs `ui.theme.colors` in `nuxt.config.ts`), set the text shade in
   `:root` and `.dark`, add its tokens to `test/unit/contrast.test.ts` and keep the test green. Text never
@@ -75,15 +79,15 @@ session cookie. The web app calls it directly at `NUXT_PUBLIC_API_URL` with
 `credentials: "include"` (`useAuth`); during server rendering it forwards the incoming `cookie`
 header, so pages and the `auth` middleware know the session before hydration. Copy is provisional.
 
-| Route              | What it does                                                                    |
-| ------------------ | ------------------------------------------------------------------------------- |
-| `/entrar`          | Sign-in, then back to `?redirect=` (same-app paths only) or `/painel`           |
-| `/cadastro`        | Account + office name; shows "check your e-mail" (no sign-in before confirming) |
-| `/verificar-email` | Target of the verification link (`confirmado=1` or `error=`); resends the link  |
-| `/convites/<id>`   | Invitation link: sign in or up with the invited e-mail, see office and role     |
-| `/esqueci-senha`   | Asks for a reset link (same answer whether or not the e-mail exists)            |
-| `/redefinir-senha` | Target of the reset link (`token` or `error=`); sets the new password           |
-| `/painel`          | Protected placeholder: office name and role (`GET /office`), or office creation |
+| Route              | What it does                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| `/entrar`          | Sign-in, then back to `?redirect=` (same-app paths only) or `/painel`                 |
+| `/cadastro`        | Account + office name; shows "check your e-mail" (no sign-in before confirming)       |
+| `/verificar-email` | Target of the verification link (`confirmado=1` or `error=`); resends the link        |
+| `/convites/<id>`   | Invitation link: sign in or up with the invited e-mail, see office and role           |
+| `/esqueci-senha`   | Asks for a reset link (same answer whether or not the e-mail exists)                  |
+| `/redefinir-senha` | Target of the reset link (`token` or `error=`); sets the new password                 |
+| `/painel`          | Protected shell: office, role and empty KPI tiles (`GET /office`), or office creation |
 
 - **Office creation:** sign-up cannot create the office (no session until the e-mail is confirmed),
   so the name typed there waits in `localStorage` and `/painel` creates the office

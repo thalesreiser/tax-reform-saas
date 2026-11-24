@@ -18,6 +18,10 @@ useHead({ title: t("auth.signUp.title") })
 
 const schema = signUpSchema(t, !invitation)
 const state = reactive({ name: "", email: "", password: "", officeName: "" })
+const hint = computed(() => {
+  const { key, count } = passwordHint(state.password.length)
+  return t(key, { min: PASSWORD_MIN_LENGTH, count }, count)
+})
 const loading = ref(false)
 const error = ref<string | null>(null)
 const sentTo = ref<string | null>(null)
@@ -74,18 +78,8 @@ async function onSubmit(event: FormSubmitEvent<SignUpInput>) {
       <UFormField :label="t('auth.fields.email')" name="email" required>
         <UInput v-model="state.email" type="email" autocomplete="email" class="w-full" />
       </UFormField>
-      <UFormField
-        :label="t('auth.fields.password')"
-        name="password"
-        :help="t('auth.fields.passwordHelp', { min: PASSWORD_MIN_LENGTH })"
-        required
-      >
-        <UInput
-          v-model="state.password"
-          type="password"
-          autocomplete="new-password"
-          class="w-full"
-        />
+      <UFormField :label="t('auth.fields.password')" name="password" :help="hint" required>
+        <PasswordInput v-model="state.password" autocomplete="new-password" />
       </UFormField>
       <UButton type="submit" block size="lg" :loading="loading">
         {{ t("auth.signUp.submit") }}
