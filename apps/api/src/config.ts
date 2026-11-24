@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { parseOriginEntry } from "./origins.js"
 
 const postgresUrl = z.url({ protocol: /^postgres(ql)?$/, error: "Must be a postgres:// URL" })
 
@@ -19,6 +20,28 @@ const configSchema = z.object({
   BETTER_AUTH_URL: z.url({ protocol: /^https?$/, error: "Must be an http(s) URL" }),
   /** Public URL of the web app: trusted origin for auth requests and base of e-mail links. */
   WEB_URL: z.url({ protocol: /^https?$/, error: "Must be an http(s) URL" }).optional(),
+  /**
+   * More browser origins allowed besides WEB_URL (CORS and auth origin check), comma-separated:
+   * exact origins and https wildcard patterns such as `https://*-trs-web.example.workers.dev`
+   * (rules in src/origins.ts). Parsed into origins and patterns.
+   */
+  CORS_EXTRA_ORIGINS: z
+    .string()
+    .optional()
+    .transform((value, ctx) => {
+      const entries = (value ?? "")
+        .split(",")
+        .map((e) => e.trim())
+        .filter((e) => e !== "")
+      return entries.flatMap((entry, index) => {
+        try {
+          return [parseOriginEntry(entry)]
+        } catch {
+          ctx.addIssue({ code: "custom", message: `Entry ${index + 1} is not an allowed origin` })
+          return []
+        }
+      })
+    }),
   /**
    * Reverse proxies in front of the API whose X-Forwarded-For entry is trusted for the client
    * address (rate limits). 0 trusts none; 1 behind Fly.io's proxy, which appends the client address.
