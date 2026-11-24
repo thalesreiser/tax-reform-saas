@@ -151,9 +151,65 @@ describe("auth screens (server-rendered, mocked API)", () => {
     const text = [...list.matchAll(/>([^<]*)</g)].map((m) => m[1] ?? "").join(" ")
     expect(text).toContain("—")
     expect(text).not.toMatch(/\d/)
-    expect(html).toContain("Cadastre o primeiro cliente para começar.")
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>[\s\S]*?Cadastrar cliente/)
-    expect(html).toContain("Em breve")
+  })
+
+  it("shows a new office the step-by-step to register its first client", async () => {
+    const html = await page("/painel", COOKIE)
+    const start = html.search(/<section[^>]*aria-labelledby="onboarding-title"/)
+    expect(start).toBeGreaterThan(-1)
+    const section = html.slice(start, html.indexOf("</section>", start))
+    expect(section).toMatch(/<h2[^>]*id="onboarding-title"[^>]*>\s*Primeiros passos/)
+    const steps = [
+      "Cadastrar o primeiro cliente",
+      "Completar o perfil fiscal",
+      "Rodar a primeira simulação",
+      "Convidar a equipe",
+    ]
+    for (const step of steps) expect(section).toContain(step)
+    expect(section).toContain("0 de 4 concluídos")
+    // The first step is the highlighted next action; no step links to a page that does not exist.
+    expect(section).toMatch(
+      /<li[^>]*surface-brand[^>]*aria-current="step"[\s\S]*?Cadastrar o primeiro/,
+    )
+    expect(section.match(/aria-current="step"/g)).toHaveLength(1)
+    expect(section.match(/aria-disabled="true"/g)).toHaveLength(4)
+    expect(section).not.toMatch(/<a\s[^>]*href=/)
+  })
+
+  it("shows the portfolio and recent simulations empty states", async () => {
+    const html = await page("/painel", COOKIE)
+    expect(html).toContain("Impacto da reforma na carteira")
+    expect(html).toContain("ordenados pelo impacto da reforma em 2033")
+    expect(html).toContain("Últimas simulações")
+    expect(html).toContain("Nenhuma simulação ainda.")
+    expect(html).not.toContain("<table")
+  })
+
+  it("renders the signed-in shell: one h1, labelled navigation and disabled future pages", async () => {
+    const html = await page("/painel", COOKIE)
+    expect(html.match(/<h1\b/g)).toHaveLength(1)
+    expect(html).toMatch(/<main[^>]*id="conteudo"/)
+    expect(html).toMatch(/<a[^>]*href="#conteudo"/)
+    const navs = [
+      ...html.matchAll(/<nav[^>]*aria-label="Navegação principal"[^>]*>([\s\S]*?)<\/nav>/g),
+    ]
+    expect(navs.length).toBeGreaterThan(0)
+    const nav = navs[0]?.[1] ?? ""
+    expect(nav).toMatch(
+      /<a[^>]*href="\/painel"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/painel"/,
+    )
+    for (const label of ["Clientes", "Simulações", "Chaves de API", "Escritório"]) {
+      expect(nav).toMatch(
+        new RegExp(`<a[^>]*aria-disabled="true"[^>]*>[\\s\\S]*?${label}[\\s\\S]*?Em breve`),
+      )
+    }
+    expect(nav.match(/href=/g)).toHaveLength(1)
+  })
+
+  it("offers a menu toggle for the navigation drawer on small screens", async () => {
+    const html = await page("/painel", COOKIE)
+    const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"))
+    expect(header).toMatch(/<button[^>]*aria-label="[^"]*menu[^"]*"/i)
   })
 
   it("shows the office and an account menu in the header when signed in", async () => {

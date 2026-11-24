@@ -2,9 +2,9 @@
 import type { FormSubmitEvent } from "@nuxt/ui"
 import type { OfficeInput } from "~/utils/auth"
 
-// Placeholder office dashboard (FE-02.1 builds the real one). A new account has no office until
-// it creates one here, with the name typed at sign-up when this browser still has it.
-definePageMeta({ middleware: "auth" })
+// Dashboard home (FE-02.1). A new account has no office until it creates one here, with the name
+// typed at sign-up when this browser still has it.
+definePageMeta({ middleware: "auth", layout: "app" })
 
 const { t } = useI18n()
 const { createOffice } = useAuth()
@@ -45,13 +45,14 @@ async function onSubmit(event: FormSubmitEvent<OfficeInput>) {
   }
 }
 
-// Illustrative tiles: no data source yet (FE-02.1), so they only show the empty state.
-const kpis = ["clients", "simulations", "apiCalls"] as const
+const dashboard = useDashboard()
+const steps = computed(() => onboardingSteps(dashboard.value))
+const onboarding = computed(() => nextStep(steps.value) !== undefined)
 </script>
 
 <template>
-  <UContainer class="space-y-6 py-10 sm:py-16">
-    <section class="surface-glass motion-enter p-6 sm:p-10">
+  <div class="space-y-6">
+    <section class="surface-glass motion-enter p-6 sm:p-8">
       <template v-if="office">
         <p class="text-sm font-semibold text-primary">{{ t("dashboard.title") }}</p>
         <h1 class="mt-2 text-3xl font-semibold tracking-tight text-highlighted">
@@ -60,11 +61,6 @@ const kpis = ["clients", "simulations", "apiCalls"] as const
         <p class="mt-2 text-muted">
           {{ t("dashboard.role", { role: t(`roles.${office.role}`) }) }}
         </p>
-        <div class="mt-6 flex flex-wrap items-center gap-3">
-          <p class="text-default">{{ t("dashboard.start") }}</p>
-          <UButton icon="i-lucide-plus" disabled>{{ t("dashboard.addClient") }}</UButton>
-          <UBadge color="neutral" variant="subtle">{{ t("dashboard.soon") }}</UBadge>
-        </div>
       </template>
 
       <UAlert
@@ -92,25 +88,13 @@ const kpis = ["clients", "simulations", "apiCalls"] as const
       </div>
     </section>
 
-    <ul v-if="office" :aria-label="t('dashboard.kpis.label')" class="grid gap-4 sm:grid-cols-3">
-      <li
-        v-for="(kpi, i) in kpis"
-        :key="kpi"
-        class="motion-enter p-5"
-        :class="i === 0 ? 'surface-brand' : 'surface-glass'"
-      >
-        <p class="text-sm" :class="i === 0 ? '' : 'text-muted'">{{ t(`dashboard.kpis.${kpi}`) }}</p>
-        <p
-          class="mt-1 text-3xl font-semibold tabular-nums"
-          :class="i === 0 ? '' : 'text-highlighted'"
-        >
-          <span aria-hidden="true">—</span>
-          <span class="sr-only">{{ t("dashboard.kpis.empty") }}</span>
-        </p>
-        <p class="mt-1 text-sm" :class="i === 0 ? '' : 'text-muted'">
-          {{ t(`dashboard.kpis.${kpi}Hint`) }}
-        </p>
-      </li>
-    </ul>
-  </UContainer>
+    <template v-if="office">
+      <DashboardOnboardingChecklist v-if="onboarding" :steps="steps" />
+      <DashboardKpiTiles :kpis="dashboard.kpis" />
+      <div class="grid gap-6 xl:grid-cols-2">
+        <DashboardPortfolioRanking :rows="dashboard.portfolio" />
+        <DashboardRecentSimulations :rows="dashboard.recentSimulations" />
+      </div>
+    </template>
+  </div>
 </template>
