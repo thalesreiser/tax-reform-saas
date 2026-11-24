@@ -104,7 +104,7 @@ function endpoints(): Record<string, Endpoint> {
           body: JSON.stringify(input),
         },
       )
-      const body = (await response.json()) as unknown
+      const body: unknown = await response.json()
       const parsed = response.ok
         ? decimalize(body, { ref: "BaseCalculoUnificadaOutput" }, regimeRegularShapes)
         : body
@@ -153,7 +153,22 @@ function compare(path: string, expected: string | null, actual: unknown): string
     const wanted = asDecimal(expected)
     return wanted?.eq(actual) ? undefined : line
   }
-  return typeof actual === "string" && actual === expected ? undefined : line
+  // Codes such as tpRBSN may come as JSON integers; upstream compares their text (`asText()`).
+  const text = typeof actual === "number" && Number.isSafeInteger(actual) ? String(actual) : actual
+  return typeof text === "string" && text === expected ? undefined : line
+}
+
+/** The codes and titles of an error body, to tell why the engine refused a case. */
+function errorCodes(body: unknown): string {
+  const errors = lookup(body, ".errors")
+  if (!Array.isArray(errors)) return ""
+  return JSON.stringify(
+    errors.map((error) => [
+      lookup(error, ".code"),
+      lookup(error, ".title"),
+      lookup(error, ".detail"),
+    ]),
+  )
 }
 
 async function readCases(engine: string) {
@@ -194,7 +209,7 @@ for (const engine of ["regime-regular", "simples-nacional"]) {
         const problems: string[] = []
         if (outcome.status !== expected.status) {
           problems.push(
-            `  HTTP status\n    expected: ${expected.status}\n    actual:   ${outcome.status}`,
+            `  HTTP status\n    expected: ${expected.status}\n    actual:   ${outcome.status} ${errorCodes(outcome.body)}`,
           )
         }
         // The client must classify the outcome the same way: a value for 2xx, a problem otherwise.
