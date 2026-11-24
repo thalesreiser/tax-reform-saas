@@ -59,6 +59,11 @@ const configSchema = z.object({
   ENGINE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(30_000),
   /** How long reference data (CST, NCM, rates...) stays in the API's in-process cache. */
   REFERENCE_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(604_800).default(21_600),
+  /** CNPJ registry provider (BrasilAPI); the CNPJ is appended to this URL. */
+  CNPJ_LOOKUP_URL: z
+    .url({ protocol: /^https?$/, error: "Must be an http(s) URL" })
+    .default("https://brasilapi.com.br/api/cnpj/v1"),
+  CNPJ_LOOKUP_TIMEOUT_MS: z.coerce.number().int().min(500).max(30_000).default(8000),
 })
 
 export type Config = z.output<typeof configSchema>

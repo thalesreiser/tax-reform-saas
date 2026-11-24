@@ -35,7 +35,19 @@ export const offices = pgTable("offices", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
-/** Client company of an office (RF-02). BE-02.2 adds the CNPJ lookup fields. */
+/** Postal address of a client, as the CNPJ registry gives it. */
+export interface ClientAddress {
+  street: string | null
+  number: string | null
+  complement: string | null
+  district: string | null
+  city: string | null
+  state: string | null
+  postalCode: string | null
+  ibgeCode: string | null
+}
+
+/** Client company of an office (RF-02). Registry fields come from the CNPJ lookup (BE-02.2). */
 export const clients = pgTable(
   "clients",
   {
@@ -46,9 +58,28 @@ export const clients = pgTable(
     /** 14 characters, no punctuation; alphanumeric CNPJs (from July 2026) fit as well. */
     cnpj: char("cnpj", { length: 14 }).notNull(),
     legalName: text("legal_name").notNull(),
+    tradeName: text("trade_name"),
+    address: jsonb("address").$type<ClientAddress>(),
+    /** CNAE subclass, 7 digits. */
+    mainCnae: text("main_cnae"),
+    secondaryCnaes: text("secondary_cnaes")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    registrationStatus: text("registration_status"),
+    /** `mei`, `simples_nacional` or `unknown`: only what the registry states. */
+    taxRegime: text("tax_regime"),
+    /** Provider of the registry fields (e.g. `brasilapi`) and when they were fetched. */
+    lookupSource: text("lookup_source"),
+    lookupFetchedAt: timestamp("lookup_fetched_at", { withTimezone: true }),
+    notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [unique("clients_office_id_cnpj_key").on(t.officeId, t.cnpj)],
+  (t) => [
+    unique("clients_office_id_cnpj_key").on(t.officeId, t.cnpj),
+    check("clients_cnpj_check", sql`${t.cnpj} ~ '^[0-9A-Z]{12}[0-9]{2}$'`),
+  ],
 )
 
 /**
