@@ -59,6 +59,12 @@ const configSchema = z.object({
   ENGINE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(30_000),
   /** How long reference data (CST, NCM, rates...) stays in the API's in-process cache. */
   REFERENCE_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(604_800).default(21_600),
+  /** Sentry project DSN; error tracking is off when unset (see deploy/README.md, Observability). */
+  SENTRY_DSN: z.url({ protocol: /^https$/, error: "Must be an https URL" }).optional(),
+  /** Environment name shown in Sentry (staging, production). */
+  SENTRY_ENVIRONMENT: z.string().min(1).default("development"),
+  /** Share of requests traced for performance; 0 (default) sends errors only. */
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
   /** CNPJ registry provider (BrasilAPI); the CNPJ is appended to this URL. */
   CNPJ_LOOKUP_URL: z
     .url({ protocol: /^https?$/, error: "Must be an http(s) URL" })

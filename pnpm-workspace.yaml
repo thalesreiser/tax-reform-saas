@@ -15,6 +15,9 @@ catalog:
   "@nuxt/test-utils": 4.4.0
   "@nuxt/ui": 4.13.0
   "@nuxtjs/i18n": 10.6.0
+  "@sentry/node": 11.17.0
+  "@sentry/nuxt": 11.17.0
+  "@sentry/vue": 11.17.0
   "@types/node": 24.19.2
   "@types/pg": 8.23.1
   "@vue/test-utils": 2.6.0
