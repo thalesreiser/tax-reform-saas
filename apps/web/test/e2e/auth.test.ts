@@ -18,14 +18,57 @@ function send(res: ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "content-type": type }).end(JSON.stringify(body))
 }
 
+// Fictional companies and generated CNPJs only.
+const EMPTY_OFFICE = "trs.session_token=empty-office"
+const CLIENTS = [
+  {
+    id: "3c0f6d8e-1a2b-4c3d-8e9f-0a1b2c3d4e5f",
+    cnpj: "11222333000181",
+    legalName: "Padaria Exemplo Ltda",
+    tradeName: "Pão Fictício",
+    registrationStatus: "ATIVA",
+    taxRegime: "simples_nacional",
+    lookup: { source: "brasilapi", fetchedAt: "2026-11-24T17:05:00.000Z" },
+    notes: null,
+  },
+  {
+    id: "4d1a7e9f-2b3c-4d4e-9f0a-1b2c3d4e5f60",
+    cnpj: "12ABC34501DE35",
+    legalName: "Oficina Teste S.A.",
+    tradeName: null,
+    registrationStatus: null,
+    taxRegime: "unknown",
+    lookup: null,
+    notes: null,
+  },
+]
+
+function listClients(url: URL, empty: boolean) {
+  const q = (url.searchParams.get("q") ?? "").toLowerCase()
+  const prefix = q.replace(/[\s./-]/g, "").toUpperCase()
+  const items = (empty ? [] : CLIENTS).filter(
+    (c) =>
+      q === "" ||
+      c.legalName.toLowerCase().includes(q) ||
+      (c.tradeName ?? "").toLowerCase().includes(q) ||
+      (prefix !== "" && c.cnpj.startsWith(prefix)),
+  )
+  return { items, page: 1, pageSize: Number(url.searchParams.get("pageSize")), total: items.length }
+}
+
 function mockApi(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? "/", "http://api.test")
-  const signedIn = (req.headers.cookie ?? "").includes(COOKIE)
+  const empty = (req.headers.cookie ?? "").includes(EMPTY_OFFICE)
+  const signedIn = (req.headers.cookie ?? "").includes(COOKIE) || empty
   if (url.pathname === "/api/auth/get-session") return send(res, 200, signedIn ? session : null)
   if (!signedIn) return send(res, 401, { status: 401, title: "Unauthorized" })
   if (url.pathname === "/office") {
     return send(res, 200, { id: "o1", name: "Escritório Fictício Ltda", role: "owner" })
   }
+  if (url.pathname === "/v1/clients") return send(res, 200, listClients(url, empty))
+  const client = CLIENTS.find((c) => url.pathname === `/v1/clients/${c.id}`)
+  if (client) return send(res, 200, client)
+  if (url.pathname.startsWith("/v1/clients/")) return send(res, 404, { status: 404 })
   if (url.pathname === "/api/auth/organization/get-invitation") {
     if (url.searchParams.get("id") === INVITATION_ID) {
       return send(res, 200, {
@@ -167,13 +210,16 @@ describe("auth screens (server-rendered, mocked API)", () => {
     ]
     for (const step of steps) expect(section).toContain(step)
     expect(section).toContain("0 de 4 concluídos")
-    // The first step is the highlighted next action; no step links to a page that does not exist.
+    // The first step is the highlighted next action and links to the new-client form; the others
+    // have no page yet.
     expect(section).toMatch(
       /<li[^>]*surface-brand[^>]*aria-current="step"[\s\S]*?Cadastrar o primeiro/,
     )
     expect(section.match(/aria-current="step"/g)).toHaveLength(1)
-    expect(section.match(/aria-disabled="true"/g)).toHaveLength(4)
-    expect(section).not.toMatch(/<a\s[^>]*href=/)
+    expect(section.match(/aria-disabled="true"/g)).toHaveLength(3)
+    expect(section.match(/<a\s[^>]*href="[^"]*"/g)?.join()).toMatch(
+      /^<a[^>]*href="\/clientes\/novo"$/,
+    )
   })
 
   it("shows the portfolio and recent simulations empty states", async () => {
@@ -198,12 +244,13 @@ describe("auth screens (server-rendered, mocked API)", () => {
     expect(nav).toMatch(
       /<a[^>]*href="\/painel"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/painel"/,
     )
-    for (const label of ["Clientes", "Simulações", "Chaves de API", "Escritório"]) {
+    expect(nav).toMatch(/<a[^>]*href="\/clientes"[^>]*>[\s\S]*?Clientes/)
+    for (const label of ["Simulações", "Chaves de API", "Escritório"]) {
       expect(nav).toMatch(
         new RegExp(`<a[^>]*aria-disabled="true"[^>]*>[\\s\\S]*?${label}[\\s\\S]*?Em breve`),
       )
     }
-    expect(nav.match(/href=/g)).toHaveLength(1)
+    expect(nav.match(/href=/g)).toHaveLength(2)
   })
 
   it("offers a menu toggle for the navigation drawer on small screens", async () => {
@@ -242,5 +289,73 @@ describe("auth screens (server-rendered, mocked API)", () => {
     const html = await page(`/convites/${EXPIRED_ID}`, COOKIE)
     expect(html).toContain("Este convite não está mais disponível")
     expect(html).not.toContain("Aceitar convite")
+  })
+})
+
+describe("client screens (server-rendered, mocked API)", () => {
+  it("redirects anonymous visitors to sign-in", async () => {
+    const response = await fetch("/clientes", {
+      redirect: "manual",
+      headers: { accept: "text/html" },
+    })
+    expect(response.status).toBe(302)
+  })
+
+  it("lists clients with formatted CNPJs, status and the regime the registry reported", async () => {
+    const html = await page("/clientes", COOKIE)
+    expect(html.match(/<h1\b/g)).toHaveLength(1)
+    const table = html.slice(html.indexOf("<table"), html.indexOf("</table>"))
+    expect(table).toMatch(/<caption[^>]*>\s*Clientes do escritório/)
+    expect(table).toContain("Padaria Exemplo Ltda")
+    expect(table).toContain("Pão Fictício")
+    expect(table).toContain("11.222.333/0001-81")
+    expect(table).toContain("12.ABC.345/01DE-35")
+    expect(table).toContain("ATIVA")
+    expect(table).toContain("Simples Nacional")
+    expect(table).toContain("Não informado pela fonte")
+    expect(table).toMatch(/aria-label="Excluir Padaria Exemplo Ltda"/)
+    // Phones get cards with the same clients.
+    expect(html).toMatch(/<ul[^>]*md:hidden[\s\S]*?Oficina Teste S\.A\./)
+    expect(html).toMatch(/<input[^>]*type="search"/)
+  })
+
+  it("filters by name and by CNPJ prefix from the address", async () => {
+    const byName = await page("/clientes?q=oficina", COOKIE)
+    expect(byName).toContain("Oficina Teste S.A.")
+    expect(byName).not.toContain("Padaria Exemplo Ltda")
+    const byCnpj = await page("/clientes?q=11.222", COOKIE)
+    expect(byCnpj).toContain("Padaria Exemplo Ltda")
+    expect(byCnpj).not.toContain("Oficina Teste S.A.")
+    expect(await page("/clientes?q=zzz", COOKIE)).toContain("Nenhum cliente encontrado para")
+  })
+
+  it("shows a new office the empty state linking to the form", async () => {
+    const html = await page("/clientes", EMPTY_OFFICE)
+    expect(html).toContain("Nenhum cliente cadastrado ainda.")
+    expect(html).not.toContain("<table")
+    expect(html).toMatch(/<a[^>]*href="\/clientes\/novo"/)
+  })
+
+  it("renders the new-client form with a labelled CNPJ field and a live lookup status", async () => {
+    const html = await page("/clientes/novo", COOKIE)
+    expect(html).toMatch(/<h1[^>]*>\s*Novo cliente/)
+    expect(html).toMatch(/<label[^>]*for="[^"]+"[^>]*>[\s\S]*?CNPJ/)
+    expect(html).toMatch(/<input[^>]*name="cnpj"/)
+    expect(html).toMatch(/aria-live="polite"/)
+    expect(html).toContain("CNPJ alfanumérico")
+  })
+
+  it("renders a client for editing with its lookup source", async () => {
+    const html = await page(`/clientes/${CLIENTS[0]?.id ?? ""}`, COOKIE)
+    expect(html).toMatch(/<h1[^>]*>\s*Padaria Exemplo Ltda/)
+    expect(html).toContain("Dados preenchidos pela Receita via BrasilAPI em 24/11/2026, 14:05.")
+    expect(html).toMatch(
+      /<input[^>]*value="11.222.333\/0001-81"[^>]*disabled|<input[^>]*disabled[^>]*value="11.222.333\/0001-81"/,
+    )
+  })
+
+  it("explains when a client does not exist", async () => {
+    const html = await page("/clientes/5e2b8f0a-3c4d-4e5f-8a1b-2c3d4e5f6a7b", COOKIE)
+    expect(html).toContain("Cliente não encontrado")
   })
 })

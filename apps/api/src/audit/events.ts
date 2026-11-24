@@ -10,8 +10,20 @@ import {
 } from "../db/schema.js"
 
 const role = z.enum(OFFICE_ROLES)
-/** Office fields better-auth can update; only their names are logged, never their values. */
-export const OFFICE_FIELDS = ["name", "slug", "logo", "metadata"] as const
+/**
+ * Office fields better-auth or the office settings (BE-02.1) can update; only their names are
+ * logged, never their values.
+ */
+export const OFFICE_FIELDS = [
+  "name",
+  "slug",
+  "logo",
+  "metadata",
+  "cnpj",
+  "contactEmail",
+  "contactPhone",
+  "brandColor",
+] as const
 /** Client fields a `client.updated` event may name. */
 export const CLIENT_FIELDS = ["cnpj", "legalName", "tradeName", "notes"] as const
 
@@ -24,6 +36,7 @@ export const AUDIT_METADATA = {
   "office.updated": z.strictObject({ fields: z.array(z.enum(OFFICE_FIELDS)).min(1) }),
   "member.invited": z.strictObject({ role }),
   "member.invitation_canceled": z.strictObject({}),
+  "member.invitation_resent": z.strictObject({}),
   "member.invitation_rejected": z.strictObject({}),
   "member.joined": z.strictObject({ role, invitationId: z.uuid().optional() }),
   "member.role_changed": z.strictObject({ from: role, to: role }),
@@ -40,6 +53,7 @@ export const AUDIT_RESOURCE_OF = {
   "office.updated": "office",
   "member.invited": "invitation",
   "member.invitation_canceled": "invitation",
+  "member.invitation_resent": "invitation",
   "member.invitation_rejected": "invitation",
   "member.joined": "member",
   "member.role_changed": "member",

@@ -2,7 +2,9 @@ import { sql } from "drizzle-orm"
 import {
   char,
   check,
+  customType,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -27,13 +29,62 @@ export * from "./auth-schema.js"
  * Accounting office: the tenant. Its id is the id of a better-auth organization; the row is created
  * and renamed by a trigger on `auth_organizations` in the same transaction (0003_auth_rls.sql).
  */
-export const offices = pgTable("offices", {
-  id: uuid("id")
-    .primaryKey()
-    .references(() => authOrganizations.id),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-})
+export const offices = pgTable(
+  "offices",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .references(() => authOrganizations.id),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Profile for reports and the share view (BE-02.1); all optional. CNPJ of the office itself. */
+    cnpj: char("cnpj", { length: 14 }),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    /** `#RRGGBB`, upper-case. */
+    brandColor: text("brand_color"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("offices_cnpj_check", sql`${t.cnpj} ~ '^[0-9A-Z]{12}[0-9]{2}$'`),
+    check("offices_brand_color_check", sql`${t.brandColor} ~ '^#[0-9A-F]{6}$'`),
+  ],
+)
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" })
+
+/** Maximum logo size, also a CHECK on the table (src/office/logo.ts validates the image). */
+export const LOGO_MAX_BYTES = 200 * 1024
+
+/**
+ * Logo of an office (BE-02.1): PNG, JPEG or WebP only, validated before it is stored. Kept in
+ * Postgres until there is an object storage provider (see README "Office").
+ */
+export const officeLogos = pgTable(
+  "office_logos",
+  {
+    officeId: uuid("office_id")
+      .primaryKey()
+      .references(() => offices.id),
+    contentType: text("content_type").notNull(),
+    data: bytea("data").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    /** Hex SHA-256 of `data`: the ETag. */
+    sha256: char("sha256", { length: 64 }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "office_logos_content_type_check",
+      sql`${t.contentType} in ('image/png', 'image/jpeg', 'image/webp')`,
+    ),
+    check(
+      "office_logos_size_check",
+      sql`octet_length(${t.data}) <= ${sql.raw(String(LOGO_MAX_BYTES))}`,
+    ),
+  ],
+)
 
 /** Postal address of a client, as the CNPJ registry gives it. */
 export interface ClientAddress {
@@ -91,6 +142,7 @@ export const AUDIT_ACTIONS = [
   "office.updated",
   "member.invited",
   "member.invitation_canceled",
+  "member.invitation_resent",
   "member.invitation_rejected",
   "member.joined",
   "member.role_changed",

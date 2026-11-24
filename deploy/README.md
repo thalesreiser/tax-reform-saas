@@ -131,6 +131,47 @@ roughly US$ 0.55/month of the US$ 5 allowance. The engines are not woken (`/heal
 them). Every 15 minutes would double this and keep the machine up a third of the time; pinging only
 the web would cost nothing but miss API outages. An external uptime service is a later option.
 
+## Backups
+
+`.github/workflows/db-backup.yml` runs daily at 06:23 UTC (03:23 in São Paulo) and by hand. It dumps
+the `public` and `drizzle` schemas of the staging database with `pg_dump` 17 (custom format), checks
+that the archive lists the expected tables, encrypts it with `age` to a public key and uploads only
+the ciphertext to Cloudflare R2 (`staging/YYYY/MM/DD/trs-<timestamp>-<sha>.dump.age`), then checks
+the uploaded size. The plaintext dump never leaves the runner and is shredded after encryption. A
+failure opens (or comments on) one issue labelled `backup`; the next good run closes it. Until the
+settings below exist, the job skips with a notice and stays green. Restore: [RUNBOOK.md](RUNBOOK.md).
+
+Side effect: the daily connection also keeps the free Supabase project from pausing after 7 idle
+days. Supabase Pro with its own daily backups comes before real client data (ADR 008).
+
+### One-time set-up (in order)
+
+1. **Enable R2** in the Cloudflare dashboard (R2 Object Storage). The free tier (10 GB) may still ask
+   for a payment method on the account.
+2. **Create the bucket** `trs-backups`, location hint South America (or ENAM if not offered),
+   standard storage class.
+3. **Lifecycle rule:** bucket, Settings, Object lifecycle rules, add a rule for prefix `staging/`
+   that deletes objects 30 days after upload.
+4. **API token:** R2, Manage API tokens, create one with **Object Read & Write** applied **only to
+   `trs-backups`**. Note the access key id, the secret access key and the account id (shown once).
+5. **age key pair**, on your machine: `age-keygen -o trs-backup.key`. The file holds the private key
+   (`AGE-SECRET-KEY-...`) and prints the public key (`age1...`). Store the private key **offline** in
+   the password manager, then `shred -u trs-backup.key`. Without it no backup can be restored.
+6. **GitHub settings** in the `staging` environment (secrets prompt for hidden input):
+
+   ```sh
+   gh variable set BACKUP_AGE_RECIPIENT --env staging --body 'age1...'
+   gh variable set R2_BUCKET --env staging --body trs-backups
+   gh secret set R2_ACCOUNT_ID --env staging
+   gh secret set R2_ACCESS_KEY_ID --env staging
+   gh secret set R2_SECRET_ACCESS_KEY --env staging
+   ```
+
+   Environment variables are not visible to a job-level `if`; the workflow checks them in a step. A
+   future job-level condition must use a repository variable (as `API_DATABASE_READY` does).
+
+7. Start "Database backup" by hand (Actions) and read the job summary, then run a restore drill.
+
 ## Rollback
 
 - List releases and their images: `fly releases --app <app> --image`.

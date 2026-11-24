@@ -279,6 +279,40 @@ API keys come with BE-03.1 as a second entry in the plugin's `authenticate` list
   for a Flycast cold start): 504. Engine 404: 404. Other failures: 502. Details are generic; the
   engine body is never returned or logged, and the request log shows the route pattern, not the codes.
 
+## Office
+
+Settings and members of the active office (BE-02.1, RF-01), all behind `app.requireOffice`. Any
+member reads; only owners write (403 otherwise). Every change is audited with ids, roles and field
+names only, never names, e-mails or other values.
+
+| Route                                    | Who   | What it does                                                   |
+| ---------------------------------------- | ----- | -------------------------------------------------------------- |
+| `GET /v1/office`                         | all   | Name, CNPJ, contact, brand colour with its contrast, logo info |
+| `PATCH /v1/office`                       | owner | Change `name`, `cnpj`, `contactEmail`, `contactPhone`, colour  |
+| `GET /v1/office/logo`                    | all   | The logo, with `ETag` (`If-None-Match` answers 304)            |
+| `POST /v1/office/logo`                   | owner | Upload: the image is the body (`image/png`, `jpeg` or `webp`)  |
+| `DELETE /v1/office/logo`                 | owner | Remove the logo                                                |
+| `GET /v1/office/members`                 | all   | Members with name, e-mail and role                             |
+| `PATCH /v1/office/members/:id`           | owner | Change the role (`owner` / `accountant`)                       |
+| `DELETE /v1/office/members/:id`          | owner | Remove; their access ends on the next request                  |
+| `GET /v1/office/invitations`             | owner | Pending, unexpired invitations                                 |
+| `DELETE /v1/office/invitations/:id`      | owner | Cancel                                                         |
+| `POST /v1/office/invitations/:id/resend` | owner | Send the e-mail again and extend it by 48 hours                |
+
+- **Name:** renames the better-auth organization; the trigger of `0003_auth_rls.sql` renames the
+  office in the same transaction. **CNPJ** is the office's own, validated like clients'.
+- **Brand colour:** `#RRGGBB` (stored upper-case). `brandContrast` gives the WCAG contrast ratio
+  against white and black and whether each meets AA (4.5:1), so the web app can warn.
+- **Logo:** PNG, JPEG or WebP, detected from the bytes (the declared type must match), at most
+  200 KB, 16 to 2048 pixels per side. SVG is rejected (it can carry scripts). Stored in Postgres
+  (`office_logos`, `bytea`, row-level security) until an object storage provider exists; served with
+  `Cache-Control: private, no-cache`, `ETag`, `nosniff` and `default-src 'none'`.
+- **Members and invitations** go through better-auth's organization API, so its checks and audit
+  hooks apply; ids of another office answer 404. Removing or demoting the last owner answers 409.
+  Removal also clears the office as the active office of that user's sessions.
+- Migration `0008_office_settings.sql`: office columns, `office_logos` with its policy and grants,
+  and the `member.invitation_resent` audit action.
+
 ## Clients
 
 Client companies of the office (RF-02), table `clients` (registry columns and the CNPJ `CHECK` in

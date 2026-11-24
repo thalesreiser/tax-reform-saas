@@ -1,0 +1,180 @@
+name: Database backup
+
+# Daily encrypted backup of the staging Supabase database to Cloudflare R2 (EST-03.4, RNF-02).
+# The dump is encrypted with age on the runner and only the ciphertext leaves it: the repository is
+# public, so no dump (encrypted or not) is ever stored as an artifact, cache or log. Skips with a
+# notice until the R2 and age settings exist; once configured, a failure opens (or comments on) one
+# issue labelled `backup` and the next good run closes it. Set-up and restore: deploy/README.md and
+# deploy/RUNBOOK.md.
+on:
+  schedule:
+    # 06:23 UTC = 03:23 in São Paulo, a quiet hour.
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PG_MAJOR: "17"
+  AGE_VERSION: v1.3.2
+  AGE_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+
+jobs:
+  backup:
+    name: Dump, encrypt and upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    outputs:
+      configured: ${{ steps.config.outputs.configured }}
+    steps:
+      # Environment variables and secrets are not visible to a job-level `if`, so the check is a step.
+      - name: Check the configuration
+        id: config
+        shell: bash
+        env:
+          DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: |
+          missing=""
+          for name in DATABASE_MIGRATION_URL R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET BACKUP_AGE_RECIPIENT; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::notice::Backup skipped: not configured yet (missing:$missing). See deploy/README.md, Backups."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install the Postgres ${{ env.PG_MAJOR }} client (PGDG) and age
+        if: steps.config.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq "postgresql-client-$PG_MAJOR" > /dev/null
+          echo "/usr/lib/postgresql/$PG_MAJOR/bin" >> "$GITHUB_PATH"
+          curl -fsSL -o "$RUNNER_TEMP/age.tgz" \
+            "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tgz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/age.tgz" -C "$RUNNER_TEMP"
+          sudo install -m 0755 "$RUNNER_TEMP/age/age" /usr/local/bin/age
+
+      - name: Dump, check, encrypt and upload
+        id: backup
+        if: steps.config.outputs.configured == 'true'
+        shell: bash
+        env:
+          DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          # R2 does not accept the newer default checksum headers of the AWS CLI.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$R2_ACCOUNT_ID"
+          started=$(date +%s)
+          work=$(mktemp -d "$RUNNER_TEMP/backup.XXXXXX")
+          dump="$work/trs.dump"
+          trap 'shred -u "$dump" 2>/dev/null || rm -f "$dump"' EXIT
+
+          # The client must be at least the server's major version. The URL is only passed in the
+          # environment (PGDATABASE accepts a connection string) and never printed.
+          export PGDATABASE="$DATABASE_MIGRATION_URL"
+          server_major=$(psql -XAtc "select current_setting('server_version_num')::int / 10000")
+          if [ "$server_major" -gt "$PG_MAJOR" ]; then
+            echo "::error::Server is Postgres $server_major; raise PG_MAJOR in db-backup.yml."
+            exit 1
+          fi
+
+          # Application data only: `public` (tables, policies) and `drizzle` (migration history).
+          pg_dump --format=custom --compress=9 --schema=public --schema=drizzle --file="$dump"
+
+          # Integrity: the archive must be readable and contain the expected tables.
+          pg_restore --list "$dump" > "$work/toc.txt"
+          for table in offices clients audit_events auth_users auth_sessions auth_accounts \
+            auth_organizations auth_members auth_invitations auth_verifications; do
+            if ! grep -Eq "TABLE public $table " "$work/toc.txt"; then
+              echo "::error::Table $table is missing from the dump."
+              exit 1
+            fi
+          done
+          tables=$(grep -Ec " TABLE public " "$work/toc.txt" || true)
+
+          age --encrypt --recipient "$BACKUP_AGE_RECIPIENT" --output "$dump.age" "$dump"
+          shred -u "$dump"
+
+          key="staging/$(date -u +%Y/%m/%d)/trs-$(date -u +%Y%m%dT%H%M%SZ)-${SHA:0:12}.dump.age"
+          endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          size=$(stat -c %s "$dump.age")
+          aws s3 cp "$dump.age" "s3://$R2_BUCKET/$key" --endpoint-url "$endpoint" --only-show-errors
+          remote=$(aws s3api head-object --bucket "$R2_BUCKET" --key "$key" \
+            --endpoint-url "$endpoint" --query ContentLength --output text)
+          if [ "$remote" != "$size" ]; then
+            echo "::error::Uploaded size $remote differs from local size $size."
+            exit 1
+          fi
+          rm -f "$dump.age"
+
+          {
+            echo "### Database backup"
+            echo ""
+            echo "| Item | Value |"
+            echo "| --- | --- |"
+            echo "| Object | \`$key\` |"
+            echo "| Encrypted size | $size bytes |"
+            echo "| Tables in public | $tables |"
+            echo "| Duration | $(( $(date +%s) - started )) s |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  report:
+    name: Open, update or close the backup issue
+    needs: backup
+    if: always() && needs.backup.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Report
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULT: ${{ needs.backup.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          issue=$(gh issue list --label backup --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ "$RESULT" != "success" ]; then
+            body="Backup failed at $(date -u +%FT%TZ) ($RESULT). Run: $RUN_URL"
+            if [ -n "$issue" ]; then
+              gh issue comment "$issue" --body "$body"
+            else
+              gh label create backup --color B60205 --description "Database backup" --force
+              gh issue create --title "Database backup failed" --label backup --body "$body"
+            fi
+            exit 1
+          elif [ -n "$issue" ]; then
+            gh issue close "$issue" --comment "Backup succeeded at $(date -u +%FT%TZ). Run: $RUN_URL"
+          fi
