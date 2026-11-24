@@ -1,16 +1,16 @@
 // Dashboard components in the Nuxt runtime: the populated state is only a prop change.
 import { mountSuspended } from "@nuxt/test-utils/runtime"
 import { describe, expect, it } from "vitest"
-import DashboardKpis from "../../app/components/dashboard/Kpis.vue"
-import DashboardOnboarding from "../../app/components/dashboard/Onboarding.vue"
-import DashboardPortfolio from "../../app/components/dashboard/Portfolio.vue"
+import DashboardKpiTiles from "../../app/components/dashboard/KpiTiles.vue"
+import DashboardOnboardingChecklist from "../../app/components/dashboard/OnboardingChecklist.vue"
+import DashboardPortfolioRanking from "../../app/components/dashboard/PortfolioRanking.vue"
 import DashboardRecentSimulations from "../../app/components/dashboard/RecentSimulations.vue"
 import { emptyDashboard, onboardingSteps } from "../../app/utils/dashboard"
 import { populatedDashboard } from "./fixtures/dashboard"
 
 describe("dashboard components", () => {
   it("ranks the portfolio in a captioned table with row headers and spelled-out tones", async () => {
-    const wrapper = await mountSuspended(DashboardPortfolio, {
+    const wrapper = await mountSuspended(DashboardPortfolioRanking, {
       props: { rows: populatedDashboard.portfolio },
     })
     const table = wrapper.find("table")
@@ -31,7 +31,7 @@ describe("dashboard components", () => {
   })
 
   it("shows the portfolio and recent simulations empty states without a table", async () => {
-    const portfolio = await mountSuspended(DashboardPortfolio, { props: { rows: [] } })
+    const portfolio = await mountSuspended(DashboardPortfolioRanking, { props: { rows: [] } })
     expect(portfolio.find("table").exists()).toBe(false)
     expect(portfolio.text()).toContain("ordenados pelo impacto da reforma em 2033")
     const recent = await mountSuspended(DashboardRecentSimulations, { props: { rows: [] } })
@@ -49,7 +49,7 @@ describe("dashboard components", () => {
   })
 
   it("formats KPI numbers in pt-BR and keeps zero as a real value", async () => {
-    const wrapper = await mountSuspended(DashboardKpis, {
+    const wrapper = await mountSuspended(DashboardKpiTiles, {
       props: { kpis: populatedDashboard.kpis },
     })
     const values = wrapper.findAll("li").map((li) => li.findAll("p")[1]?.text())
@@ -58,7 +58,7 @@ describe("dashboard components", () => {
   })
 
   it("highlights the next onboarding step and marks finished ones", async () => {
-    const empty = await mountSuspended(DashboardOnboarding, {
+    const empty = await mountSuspended(DashboardOnboardingChecklist, {
       props: { steps: onboardingSteps(emptyDashboard()) },
     })
     const items = empty.findAll("li")
@@ -69,7 +69,7 @@ describe("dashboard components", () => {
 
     const view = emptyDashboard()
     view.progress.clients = 1
-    const later = await mountSuspended(DashboardOnboarding, {
+    const later = await mountSuspended(DashboardOnboardingChecklist, {
       props: { steps: onboardingSteps(view) },
     })
     expect(later.text()).toContain("1 de 4 concluídos")

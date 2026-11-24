@@ -89,10 +89,10 @@ const onboarding = computed(() => nextStep(steps.value) !== undefined)
     </section>
 
     <template v-if="office">
-      <DashboardOnboarding v-if="onboarding" :steps="steps" />
-      <DashboardKpis :kpis="dashboard.kpis" />
+      <DashboardOnboardingChecklist v-if="onboarding" :steps="steps" />
+      <DashboardKpiTiles :kpis="dashboard.kpis" />
       <div class="grid gap-6 xl:grid-cols-2">
-        <DashboardPortfolio :rows="dashboard.portfolio" />
+        <DashboardPortfolioRanking :rows="dashboard.portfolio" />
         <DashboardRecentSimulations :rows="dashboard.recentSimulations" />
       </div>
     </template>
