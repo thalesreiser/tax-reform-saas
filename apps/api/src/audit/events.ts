@@ -5,6 +5,7 @@ import type { OfficeTx } from "../db/client.js"
 import {
   AUDIT_ACTIONS,
   type AuditAction,
+  FISCAL_REGIMES,
   type AuditResourceType,
   auditEvents,
 } from "../db/schema.js"
@@ -26,6 +27,22 @@ export const OFFICE_FIELDS = [
 ] as const
 /** Client fields a `client.updated` event may name. */
 export const CLIENT_FIELDS = ["cnpj", "legalName", "tradeName", "notes"] as const
+/** Fiscal profile fields a `client.fiscal_profile_updated` event may name (BE-02.3). */
+export const PROFILE_FIELDS = [
+  "regime",
+  "simplesAnnex",
+  "rbt12",
+  "mainCnae",
+  "secondaryCnaes",
+  "uf",
+  "municipalityCode",
+  "revenue12m",
+  "payroll12m",
+  "salesMix",
+  "creditablePurchases",
+  "regimeConfirmation",
+] as const
+const lineCount = z.number().int().min(0).max(1000)
 
 /**
  * Allow-list of metadata per action. Only enums, ids and field names: no free text, so a name, an
@@ -45,6 +62,13 @@ export const AUDIT_METADATA = {
   "client.created": z.strictObject({}),
   "client.updated": z.strictObject({ fields: z.array(z.enum(CLIENT_FIELDS)).min(1) }),
   "client.deleted": z.strictObject({}),
+  /** Field names and line counts only; an empty list is the first save of an unchanged draft. */
+  "client.fiscal_profile_updated": z.strictObject({
+    fields: z.array(z.enum(PROFILE_FIELDS)),
+    salesMixLines: lineCount,
+    creditablePurchaseLines: lineCount,
+  }),
+  "client.regime_confirmed": z.strictObject({ regime: z.enum(FISCAL_REGIMES) }),
 } satisfies Record<AuditAction, z.ZodType>
 
 /** The kind of resource each action is about; `resourceId` is that resource's id. */
@@ -62,6 +86,8 @@ export const AUDIT_RESOURCE_OF = {
   "client.created": "client",
   "client.updated": "client",
   "client.deleted": "client",
+  "client.fiscal_profile_updated": "client",
+  "client.regime_confirmed": "client",
 } as const satisfies Record<AuditAction, AuditResourceType>
 
 const actorSchema = z.object({ userId: z.uuid(), role: role.nullable() }).nullable()

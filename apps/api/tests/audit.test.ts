@@ -25,6 +25,12 @@ const VALID: Record<AuditAction, Record<string, unknown>> = {
   "client.created": {},
   "client.updated": { fields: ["legalName"] },
   "client.deleted": {},
+  "client.fiscal_profile_updated": {
+    fields: ["regime", "salesMix"],
+    salesMixLines: 3,
+    creditablePurchaseLines: 0,
+  },
+  "client.regime_confirmed": { regime: "lucro_presumido" },
 }
 
 // Personal or fiscal data that must never reach the log, whatever the action.
@@ -54,11 +60,13 @@ describe("audit metadata allow-list", () => {
     )
   })
 
-  // Guard for new actions: only enums, uuids and lists of enums, so no value can be free text.
+  // Guard for new actions: only enums, uuids, lists of enums and integer counts, so no value can
+  // be free text.
   it.each(AUDIT_ACTIONS)("declares %s with closed values only", (action) => {
     const closed = (schema: z.ZodType): boolean => {
       if (schema instanceof z.ZodOptional) return closed(schema.unwrap() as z.ZodType)
       if (schema instanceof z.ZodArray) return schema.element instanceof z.ZodEnum
+      if (schema instanceof z.ZodNumber) return schema.format === "safeint"
       return schema instanceof z.ZodEnum || schema instanceof z.ZodUUID
     }
     const shape = AUDIT_METADATA[action].shape as Record<string, z.ZodType>
