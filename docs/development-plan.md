@@ -75,8 +75,8 @@ At 25 h per week the M scope takes 12 weeks; at 20 h per week, 15 weeks (Q-03).
 | EST-03.3 | Observability | RNF-09 | M | 3 h | EST-03.2 |
 | EST-03.4 | Backups and production readiness checklist | RNF-02 | M | 3 h | EST-03.3 |
 
-- **EST-03.1** Oracle Cloud account (individual, home region São Paulo, Pay As You Go, US$ 1 budget alert) · VCN and A1 VM · SSH key · Supabase project in `sa-east-1` · Cloudflare · domain (ADR 008)
-- **EST-03.2** Cloudflare PR preview · arm64 images · VM hardening, Docker and Caddy · SSH deploy job · migrations on deploy
+- **EST-03.1** Fly.io account and CLI login · apps `trs-tax-api`, `trs-engine-rr`, `trs-engine-sn` in `gru` · Supabase project in `sa-east-1` · Cloudflare · domain (ADR 008)
+- **EST-03.2** Cloudflare PR preview · `fly.toml` per app (engines private, auto stop/start) · deploy workflow from GHCR with per-app tokens · API secrets · migrations on deploy
 - **EST-03.3** Structured logs · Sentry (web, API, extension) · uptime checks
 - **EST-03.4** Postgres backups and restore test · runbook · rollback
 

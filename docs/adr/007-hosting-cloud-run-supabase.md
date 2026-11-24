@@ -1,6 +1,6 @@
 # 007 - Hosting: Cloud Run for the API and engines, Supabase for Postgres
 
-- **Status:** superseded by [008](008-hosting-oracle-always-free.md) (Google Cloud billing in Brazil requires a CNPJ, which the project does not have yet)
+- **Status:** superseded by [008](008-hosting-fly-io-supabase.md) (Google Cloud billing in Brazil requires a CNPJ, which the project does not have yet)
 - **Date:** 2026-11-23
 - **Decided by:** Thales Reiser
 - **Reference:** DEC-01, EST-03.1, EST-03.2; supersedes the "Postgres (Neon)" and "container host" rows of

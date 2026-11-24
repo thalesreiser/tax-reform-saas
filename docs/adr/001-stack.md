@@ -41,7 +41,7 @@ Option 1.
 | Extension | WXT (Manifest V3) + Vue, Chrome and Edge first |
 | SDK | TypeScript generated from the OpenAPI spec; PHP after the MVP |
 | Billing | Asaas (Pix, boleto, card, subscriptions) |
-| Hosting | Web on Cloudflare with PR previews; API and engines on an Oracle Cloud Always Free VM (ADR 008) |
+| Hosting | Web on Cloudflare with PR previews; API and engines on Fly.io, region São Paulo (ADR 008) |
 | Observability | Structured logs, Sentry, uptime checks |
 
 ## Consequences
