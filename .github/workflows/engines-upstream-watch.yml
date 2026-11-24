@@ -1,0 +1,217 @@
+name: Engines upstream watch
+
+# Weekly check for new official engine releases (MOT-01.4, ADR 004). For each engine whose latest
+# upstream release (drafts and pre-releases ignored) is newer than engines/versions.env, it updates the
+# tag and the commit the tag points to on one branch per engine, opens or updates the bump PR against
+# develop with the release notes and CHANGELOG excerpt, then dispatches engine-images.yml (images and
+# golden contract tests) and engines.yml on that branch and posts their result on the PR.
+#
+# Upstream code is never executed here: only the GitHub API and git ls-remote are used.
+#
+# The PR is opened with GITHUB_TOKEN, and GitHub does not start pull_request workflows for events
+# created by GITHUB_TOKEN. That is why the engine workflows are dispatched explicitly; the required
+# ci-ok check appears once a maintainer closes and reopens the PR (see engines/README.md).
+
+on:
+  schedule:
+    # Mondays 06:00 BRT, before the weekly engine runs.
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: engines-upstream-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    name: Watch ${{ matrix.engine }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - engine: regime-regular
+            pin: REGIME_REGULAR
+          - engine: simples-nacional
+            pin: SIMPLES_NACIONAL
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ENGINE: ${{ matrix.engine }}
+      PIN: ${{ matrix.pin }}
+      BRANCH: chore/engines-bump-${{ matrix.engine }}
+      BASE: develop
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Compare the pinned tag with the latest upstream release
+        id: check
+        run: |
+          source engines/versions.env
+          repo_var="${PIN}_REPO" tag_var="${PIN}_TAG"
+          repo=${!repo_var} current=${!tag_var}
+          # /releases/latest never returns drafts or pre-releases.
+          latest=$(gh api "repos/$repo/releases/latest" --jq .tag_name)
+          if [[ ! $latest =~ ^v?[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "::error::$repo latest release tag '$latest' is not a version number"
+            exit 1
+          fi
+          newest=$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -n 1)
+          {
+            echo "repo=$repo"
+            echo "current=$current"
+            echo "latest=$latest"
+            echo "bump=$([[ $latest != "$current" && $newest == "$latest" ]] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+          echo "- $repo: pinned $current, latest release $latest" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update versions.env and verify the tag against its commit
+        if: steps.check.outputs.bump == 'true'
+        id: pin
+        env:
+          REPO: ${{ steps.check.outputs.repo }}
+          LATEST: ${{ steps.check.outputs.latest }}
+        run: |
+          # Same resolution as check-pins.sh: the peeled line (^{}) of an annotated tag is the commit.
+          sha=$(git ls-remote --tags "https://github.com/$REPO.git" "refs/tags/$LATEST" "refs/tags/$LATEST^{}" | tail -n 1 | cut -f 1)
+          if [[ ! $sha =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::could not resolve $REPO tag $LATEST"
+            exit 1
+          fi
+          api_sha=$(gh api "repos/$REPO/commits/$LATEST" --jq .sha)
+          if [[ $api_sha != "$sha" ]]; then
+            echo "::error::$REPO tag $LATEST: git says $sha, the API says $api_sha"
+            exit 1
+          fi
+          sed -i -E "s/^${PIN}_TAG=.*/${PIN}_TAG=${LATEST}/; s/^${PIN}_SHA=.*/${PIN}_SHA=${sha}/" engines/versions.env
+          engines/scripts/check-pins.sh engines/versions.env
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Write the PR body
+        if: steps.check.outputs.bump == 'true'
+        env:
+          REPO: ${{ steps.check.outputs.repo }}
+          CURRENT: ${{ steps.check.outputs.current }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          SHA: ${{ steps.pin.outputs.sha }}
+        run: |
+          # Upstream text is only written to a file, never evaluated.
+          {
+            echo "## What"
+            echo
+            echo "Bumps \`$ENGINE\` from \`$CURRENT\` to \`$LATEST\` (commit \`$SHA\`), opened by the upstream watcher. Task: MOT-01.4"
+            echo
+            echo "Compare: https://github.com/$REPO/compare/$CURRENT...$LATEST"
+            echo
+            echo "## Review checklist"
+            echo
+            echo "- [ ] Read the release notes and the CHANGELOG excerpt below"
+            echo "- [ ] Engine images and golden contract tests green (result posted as a comment below)"
+            echo "- [ ] If upstream changed \`docs/exemplos.md\` or its tests, fixtures updated from upstream (never to make CI pass)"
+            echo "- [ ] ADR 004 numbers (memory, start-up time) still hold in the engines and engine-images summaries"
+            echo "- [ ] Closed and reopened this PR so the required \`ci-ok\` check runs"
+            echo
+            echo "## Release notes"
+            echo
+            gh api --paginate "repos/$REPO/releases" \
+              --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name' |
+              while read -r tag; do
+                if [[ $tag != "$CURRENT" && $(printf '%s\n%s\n' "$CURRENT" "$tag" | sort -V | tail -n 1) == "$tag" &&
+                  $(printf '%s\n%s\n' "$tag" "$LATEST" | sort -V | tail -n 1) == "$LATEST" ]]; then
+                  echo "### $tag"
+                  echo
+                  gh api "repos/$REPO/releases/tags/$tag" --jq '.body // ""'
+                  echo
+                fi
+              done
+            echo "## CHANGELOG.md excerpt ($CURRENT to $LATEST)"
+            echo
+            echo '````md'
+            # Keep a Changelog: everything above the section of the pinned version.
+            gh api "repos/$REPO/contents/CHANGELOG.md?ref=$SHA" -H "Accept: application/vnd.github.raw" |
+              awk -v cur="$CURRENT" 'index($0, "## [" cur "]") == 1 { exit } started || /^## \[/ { started = 1; print }' ||
+              echo "(no CHANGELOG.md at $LATEST)"
+            echo '````'
+          } > body.md
+          # GitHub limits a PR body to 65536 characters.
+          if (( $(wc -c < body.md) > 60000 )); then
+            head -c 60000 body.md > body.tmp && printf '\n````\n\n(truncated: see the compare link)\n' >> body.tmp && mv body.tmp body.md
+          fi
+
+      - name: Push the bump branch and open or update the PR
+        if: steps.check.outputs.bump == 'true'
+        id: pr
+        env:
+          LATEST: ${{ steps.check.outputs.latest }}
+        run: |
+          title="chore(engines): bump $ENGINE to $LATEST (MOT-01.4)"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          # Idempotent: if the branch already pins this tag, keep it (it may hold reviewed fixture fixes).
+          if git fetch --quiet origin "$BRANCH" 2>/dev/null &&
+            git show "FETCH_HEAD:engines/versions.env" | grep -qx "${PIN}_TAG=$LATEST"; then
+            echo "$BRANCH already pins $LATEST; not pushing"
+            pushed=false
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git switch -C "$BRANCH"
+            git commit --quiet -m "$title" -- engines/versions.env
+            git push --force "$remote" "$BRANCH"
+            pushed=true
+          fi
+          number=$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')
+          if [[ -n $number ]]; then
+            gh pr edit "$number" --title "$title" --body-file body.md
+          else
+            gh pr create --head "$BRANCH" --base "$BASE" --title "$title" --body-file body.md
+            number=$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number')
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "pushed=$pushed" >> "$GITHUB_OUTPUT"
+          echo "- Bump PR: #$number (branch pushed: $pushed)" >> "$GITHUB_STEP_SUMMARY"
+
+      # GITHUB_TOKEN pushes start no workflows, so the engine checks are dispatched on the branch.
+      - name: Run the engine images, contract tests and engine builds on the bump branch
+        if: steps.pr.outputs.pushed == 'true'
+        env:
+          NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          head=$(git rev-parse HEAD)
+          summary=""
+          status=0
+          for wf in engine-images.yml engines.yml; do
+            gh workflow run "$wf" --ref "$BRANCH"
+            id=""
+            for _ in $(seq 30); do
+              sleep 10
+              id=$(gh run list --workflow "$wf" --branch "$BRANCH" --event workflow_dispatch --commit "$head" \
+                --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+              [[ -n $id ]] && break
+            done
+            if [[ -z $id ]]; then
+              summary+="- \`$wf\`: dispatched, run not found"$'\n'
+              status=1
+              continue
+            fi
+            gh run watch "$id" --interval 30 > /dev/null || true
+            conclusion=$(gh run view "$id" --json conclusion --jq .conclusion)
+            [[ $conclusion == success ]] || status=1
+            summary+="- \`$wf\`: **$conclusion**: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$id"$'\n'
+          done
+          gh pr comment "$NUMBER" --body "Engine checks on \`$head\` (dispatched by the upstream watcher):
+
+          ${summary}
+          The required \`ci-ok\` check does not run on PRs opened by the watcher: close and reopen this PR to start it."
+          exit "$status"
