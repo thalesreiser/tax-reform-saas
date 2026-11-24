@@ -1,5 +1,6 @@
-// Scrubbing shared by the browser and the Worker Sentry clients (EST-03.3). Structural types keep
-// this file free of any Sentry import, so it costs nothing when error tracking is off.
+// Scrubbing shared by the browser and the Worker Sentry clients (EST-03.3). Type-only import: no
+// Sentry code is loaded by this file.
+import type { ErrorEvent } from "@sentry/vue"
 
 /** CNPJ and CPF (formatted or digits only) and e-mail addresses. */
 const SENSITIVE_TEXT = [
@@ -12,21 +13,11 @@ export function scrubSentryText(text: string): string {
   return SENSITIVE_TEXT.reduce((acc, pattern) => acc.replace(pattern, "[redacted]"), text)
 }
 
-interface ScrubbableEvent {
-  message?: string
-  request?: { method?: string; url?: string; [key: string]: unknown }
-  user?: unknown
-  extra?: unknown
-  breadcrumbs?: unknown
-  server_name?: string
-  exception?: { values?: { value?: string; stacktrace?: { frames?: { vars?: unknown }[] } }[] }
-}
-
 /**
  * Keeps the method and the path of the request (no query string or fragment) and drops headers,
  * cookies, bodies, form values, user data, extra data and breadcrumbs. Messages are masked.
  */
-export function scrubSentryEvent<T extends ScrubbableEvent>(event: T): T {
+export function scrubSentryEvent(event: ErrorEvent): ErrorEvent {
   if (event.request !== undefined) {
     const { method, url } = event.request
     event.request = {

@@ -1,3 +1,4 @@
+import type { ErrorEvent } from "@sentry/vue"
 import { describe, expect, it } from "vitest"
 import { scrubSentryEvent, scrubSentryText } from "../../shared/utils/sentry-scrub"
 
@@ -5,7 +6,8 @@ import { scrubSentryEvent, scrubSentryText } from "../../shared/utils/sentry-scr
 const CNPJ = "12.345.678/0001-95"
 
 describe("scrubSentryEvent", () => {
-  const event = () => ({
+  const event = (): ErrorEvent => ({
+    type: undefined,
     message: `Erro com ${CNPJ}`,
     request: {
       method: "GET",
