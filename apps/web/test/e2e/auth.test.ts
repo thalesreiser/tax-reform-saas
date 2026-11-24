@@ -423,7 +423,7 @@ describe("office settings (server-rendered, mocked API)", () => {
 
   it("shows owners the editable profile, brand warning, team and invitations", async () => {
     const html = await page("/escritorio", COOKIE)
-    expect(html.match(/<h1b/g)).toHaveLength(1)
+    expect(html.match(/<h1\b/g)).toHaveLength(1)
     for (const id of ["perfil", "marca", "equipe", "chaves"]) {
       expect(html).toMatch(new RegExp(`<section[^>]*id="${id}"`))
     }

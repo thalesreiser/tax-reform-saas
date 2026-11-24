@@ -124,9 +124,7 @@ export type OfficeAction =
 
 function code(error: unknown): unknown {
   const data =
-    typeof error === "object" && error !== null && "data" in error
-      ? error.data
-      : undefined
+    typeof error === "object" && error !== null && "data" in error ? error.data : undefined
   return typeof data === "object" && data !== null && "code" in data ? data.code : undefined
 }
 
