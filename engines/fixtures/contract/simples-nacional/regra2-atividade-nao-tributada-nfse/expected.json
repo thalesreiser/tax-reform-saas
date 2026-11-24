@@ -1,0 +1,11 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".resolucaoAliquotas.itens[0].tipoAliquota": "SEM_ALIQUOTA",
+    ".resolucaoAliquotas.itens[0].regraAliquota": "ATIVIDADE_NAO_TRIBUTADA",
+    ".resolucaoAliquotas.itens[0].pCBSSN": "0",
+    ".objetos[0].estadoItem": "CALCULADO",
+    ".objetos[0].tribCalc.vCBSSN": "0.00"
+  }
+}

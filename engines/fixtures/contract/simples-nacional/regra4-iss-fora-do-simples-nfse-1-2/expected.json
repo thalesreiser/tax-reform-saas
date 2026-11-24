@@ -1,0 +1,10 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".resolucaoAliquotas.itens[0].regraAliquota": "ISS_FORA_DO_SIMPLES",
+    ".resolucaoAliquotas.itens[0].tipoAliquota": "SEM_REDISTRIBUICAO",
+    ".resolucaoAliquotas.itens[0].pCBSSN": "1.99",
+    ".objetos[0].tribCalc.vCBSSN": "199.00"
+  }
+}

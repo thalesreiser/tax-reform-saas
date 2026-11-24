@@ -1,0 +1,23 @@
+{
+  "id": "op-1",
+  "versao": "3.0.0",
+  "data": "2027-03-15",
+  "tpDoc": "55",
+  "CRT": "1",
+  "tpRegimeIBSCBS": "1",
+  "itens": [
+    {
+      "numero": 1,
+      "cClassTrib": "000001",
+      "baseCalculo": "1000.00",
+      "valorImpostoSeletivo": "0.00"
+    },
+    {
+      "numero": 2,
+      "cAtivSN": "01",
+      "cClassTrib": "410001",
+      "baseCalculo": "500.00",
+      "valorImpostoSeletivo": "0.00"
+    }
+  ]
+}

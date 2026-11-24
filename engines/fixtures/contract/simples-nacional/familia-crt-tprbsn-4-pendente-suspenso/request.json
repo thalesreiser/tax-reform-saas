@@ -1,0 +1,48 @@
+{
+  "id": "op-1",
+  "versao": "3.0.0",
+  "data": "2027-03-15",
+  "tpDoc": "55",
+  "CRT": "1",
+  "aliquotasEfetivas": {
+    "fatorR": true,
+    "impedimentoSublimite": false,
+    "anexoI": {
+      "pCBSSN": "1.1612",
+      "pIBSSN": "0.0129"
+    },
+    "anexoII": {
+      "pCBSSN": "1.1184",
+      "pIBSSN": "0.0121"
+    },
+    "anexoIII": {
+      "pCBSSN": "2.2154",
+      "pIBSSN": "0.0257",
+      "semRedistribuicaoISS": {
+        "pCBSSN": "1.99",
+        "pIBSSN": "0.0231"
+      }
+    },
+    "anexoIV": {
+      "pCBSSN": "2.0119",
+      "pIBSSN": "0.022",
+      "semRedistribuicaoISS": {
+        "pCBSSN": "1.85",
+        "pIBSSN": "0.0202"
+      }
+    },
+    "anexoV": {
+      "pCBSSN": "3.2534",
+      "pIBSSN": "0.0363"
+    }
+  },
+  "itens": [
+    {
+      "numero": 1,
+      "cAtivSN": "01",
+      "cClassTrib": "550001",
+      "baseCalculo": "1000.00",
+      "valorImpostoSeletivo": "0.00"
+    }
+  ]
+}

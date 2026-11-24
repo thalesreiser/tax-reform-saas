@@ -1,0 +1,9 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".objetos[0].erros[0].code": "VSN-040",
+    ".objetos[0].erros[0].pointer": "#/aliquotasEfetivas/fatorR",
+    ".resolucaoAliquotas.itens[0].motivo": "FATOR_R_AUSENTE"
+  }
+}

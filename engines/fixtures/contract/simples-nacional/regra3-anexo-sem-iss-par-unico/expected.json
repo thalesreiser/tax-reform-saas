@@ -1,0 +1,13 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".resolucaoAliquotas.itens[0].tipoAliquota": "PAR_UNICO",
+    ".resolucaoAliquotas.itens[0].regraAliquota": "ANEXO_SEM_ISS",
+    ".resolucaoAliquotas.itens[0].anexoAplicado": "I",
+    ".resolucaoAliquotas.itens[0].pCBSSN": "1.1612",
+    ".objetos[0].tribCalc.vCBSSN": "11.61",
+    ".objetos[0].tribCalc.vIBSSN": "0.13",
+    ".resolucaoAliquotas.itens[1].anexoAplicado": "II"
+  }
+}
