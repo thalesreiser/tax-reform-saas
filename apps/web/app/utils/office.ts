@@ -125,11 +125,9 @@ export type OfficeAction =
 function code(error: unknown): unknown {
   const data =
     typeof error === "object" && error !== null && "data" in error
-      ? (error as { data: unknown }).data
+      ? error.data
       : undefined
-  return typeof data === "object" && data !== null && "code" in data
-    ? (data as { code: unknown }).code
-    : undefined
+  return typeof data === "object" && data !== null && "code" in data ? data.code : undefined
 }
 
 /** Message key for a failed office, member or invitation call (problem details from the API). */
