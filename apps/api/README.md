@@ -44,6 +44,11 @@ docker run --rm -p 3000:3000 -e APP_VERSION=local trs-api
 - **CI:** `.github/workflows/image.yml` builds the image, checks the non-root user, smoke-tests
   `/health` and scans it with Trivy, failing on any critical vulnerability.
 
+## Deploy
+
+Staging runs on Fly.io with Postgres on Supabase: see [`deploy/README.md`](../../deploy/README.md)
+(topology, pipeline, secrets, the one-time `trs_api` user and rollback).
+
 ## Database
 
 Postgres (Neon in production) through Drizzle ORM on `pg`. Schema: `src/db/schema.ts`; migrations:

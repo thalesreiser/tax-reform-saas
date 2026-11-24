@@ -17,7 +17,24 @@ describe("loadConfig", () => {
       PORT: 3000,
       LOG_LEVEL: "info",
       APP_VERSION: "dev",
+      TRUST_PROXY_HOPS: 0,
     })
+  })
+
+  it("reads the proxy hops and engine URLs", () => {
+    const config = loadConfig({
+      ...REQUIRED,
+      TRUST_PROXY_HOPS: "1",
+      ENGINE_REGIME_REGULAR_URL: "http://engine-rr.example:8080",
+      ENGINE_SIMPLES_NACIONAL_URL: "http://engine-sn.example:8082",
+    })
+    expect(config.TRUST_PROXY_HOPS).toBe(1)
+    expect(config.ENGINE_REGIME_REGULAR_URL).toBe("http://engine-rr.example:8080")
+    expect(config.ENGINE_SIMPLES_NACIONAL_URL).toBe("http://engine-sn.example:8082")
+  })
+
+  it("rejects a negative proxy hop count", () => {
+    expect(() => loadConfig({ ...REQUIRED, TRUST_PROXY_HOPS: "-1" })).toThrow("TRUST_PROXY_HOPS")
   })
 
   it("coerces the port", () => {
