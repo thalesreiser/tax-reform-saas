@@ -2,7 +2,12 @@ import type { FastifyBaseLogger } from "fastify"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { type App, buildApp } from "../src/app.js"
 import { CREDENTIAL_LIMITS } from "../src/auth/plugin.js"
-import { LogMailer, invitationMail, verificationMail } from "../src/auth/mailer.js"
+import {
+  LogMailer,
+  invitationMail,
+  resetPasswordMail,
+  verificationMail,
+} from "../src/auth/mailer.js"
 import { isOfficeRole } from "../src/auth/roles.js"
 import { loadConfig } from "../src/config.js"
 import { problemSchema } from "../src/problem.js"
@@ -11,8 +16,10 @@ import { TEST_ENV } from "./env.js"
 // No database here (TEST_ENV points nowhere): every case must answer before a query.
 let app: App | undefined
 
-async function start(): Promise<App> {
-  app = await buildApp(loadConfig(TEST_ENV))
+const WEB_URL = "https://web.example.test"
+
+async function start(env: Record<string, string> = {}): Promise<App> {
+  app = await buildApp(loadConfig({ ...TEST_ENV, ...env }))
   await app.ready()
   return app
 }
@@ -47,6 +54,13 @@ describe("mail", () => {
     expect(verificationMail({ to: "a@example.test", url: "https://x.test/v" }).text).toContain(
       "https://x.test/v",
     )
+  })
+
+  it("writes the password reset e-mail in Portuguese with the link", () => {
+    const reset = resetPasswordMail({ to: "a@example.test", url: "https://x.test/r?token=t" })
+    expect(reset.subject).toBe("Redefinição de senha")
+    expect(reset.text).toContain("https://x.test/r?token=t")
+    expect(reset.text).toContain("1 hora")
   })
 
   function fakeLog() {
@@ -106,6 +120,57 @@ describe("auth routes", () => {
     expect(limited.statusCode).toBe(429)
     expect(limited.headers["retry-after"]).toBeDefined()
     expect(problemSchema.parse(limited.json())).toMatchObject({ status: 429 })
+  })
+
+  it("answers the preflight of WEB_URL with credentials and exposed headers", async () => {
+    const res = await (
+      await start({ WEB_URL })
+    ).inject({
+      method: "OPTIONS",
+      url: "/api/auth/sign-in/email",
+      headers: {
+        origin: WEB_URL,
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "content-type",
+      },
+    })
+    expect(res.statusCode).toBe(204)
+    expect(res.headers["access-control-allow-origin"]).toBe(WEB_URL)
+    expect(res.headers["access-control-allow-credentials"]).toBe("true")
+    expect(res.headers["access-control-max-age"]).toBe("600")
+  })
+
+  it("exposes retry-after and the request id to WEB_URL", async () => {
+    const res = await (
+      await start({ WEB_URL })
+    ).inject({ method: "GET", url: "/office", headers: { origin: WEB_URL } })
+    expect(res.headers["access-control-allow-origin"]).toBe(WEB_URL)
+    expect(res.headers["access-control-expose-headers"]).toBe("retry-after, x-request-id")
+  })
+
+  it.each(["https://evil.example.test", "https://web.example.test.evil.test"])(
+    "sends no CORS headers to %s",
+    async (origin) => {
+      const api = await start({ WEB_URL })
+      const preflight = await api.inject({
+        method: "OPTIONS",
+        url: "/api/auth/sign-in/email",
+        headers: { origin, "access-control-request-method": "POST" },
+      })
+      const get = await api.inject({ method: "GET", url: "/office", headers: { origin } })
+      for (const res of [preflight, get]) {
+        expect(res.headers["access-control-allow-origin"]).toBeUndefined()
+        expect(res.headers["access-control-allow-credentials"]).toBeUndefined()
+      }
+    },
+  )
+
+  it("allows preview hosts matching CORS_EXTRA_ORIGINS", async () => {
+    const origin = "https://abc123-trs-web.acct.workers.test"
+    const res = await (
+      await start({ WEB_URL, CORS_EXTRA_ORIGINS: "https://*-trs-web.acct.workers.test" })
+    ).inject({ method: "GET", url: "/office", headers: { origin } })
+    expect(res.headers["access-control-allow-origin"]).toBe(origin)
   })
 
   it("keeps the auth routes out of the OpenAPI document", async () => {

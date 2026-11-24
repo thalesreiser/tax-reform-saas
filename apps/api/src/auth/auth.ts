@@ -8,7 +8,8 @@ import { createAuditHooks } from "../audit/auth-hooks.js"
 import type { Config } from "../config.js"
 import { authSchema, authMembers } from "../db/auth-schema.js"
 import { type Db, authDatabase } from "../db/client.js"
-import { type Mailer, invitationMail, verificationMail } from "./mailer.js"
+import { type OriginPolicy, isAllowedOrigin } from "../origins.js"
+import { type Mailer, invitationMail, resetPasswordMail, verificationMail } from "./mailer.js"
 import { accessControl, isOfficeRole, officeRoles } from "./roles.js"
 
 /** Mount point of better-auth's routes in the Fastify app. */
@@ -17,12 +18,16 @@ export const MIN_PASSWORD_LENGTH = 10
 export const MAX_PASSWORD_LENGTH = 128
 /** Invitation lifetime: 48 hours. */
 export const INVITATION_EXPIRES_IN_SECONDS = 48 * 60 * 60
+/** Password-reset link lifetime: 1 hour. */
+export const RESET_PASSWORD_EXPIRES_IN_SECONDS = 60 * 60
 
 export interface AuthDeps {
   config: Config
   db: Db
   mailer: Mailer
   log: FastifyBaseLogger
+  /** Browser origins trusted by the origin check (src/origins.ts); the API's own is always trusted. */
+  origins: OriginPolicy
 }
 
 function rejectUnknownRole(role: unknown): void {
@@ -36,7 +41,7 @@ function rejectUnknownRole(role: unknown): void {
  * better-auth with e-mail + password and the organization plugin (organization = office, RF-01).
  * Its own rate limiter is off: the Fastify plugin limits per IP and per e-mail (src/auth/plugin.ts).
  */
-export function createAuth({ config, db, mailer, log }: AuthDeps) {
+export function createAuth({ config, db, mailer, log, origins }: AuthDeps) {
   const database = authDatabase(db)
   const webUrl = config.WEB_URL ?? config.BETTER_AUTH_URL
   const audit = createAuditHooks(db).organizationHooks
@@ -46,7 +51,13 @@ export function createAuth({ config, db, mailer, log }: AuthDeps) {
     baseURL: config.BETTER_AUTH_URL,
     basePath: AUTH_BASE_PATH,
     secret: config.BETTER_AUTH_SECRET,
-    trustedOrigins: config.WEB_URL === undefined ? [] : [config.WEB_URL],
+    // Exact origins, plus the request's own origin only when it matches a wildcard pattern of ours
+    // (better-auth's own wildcards are looser than src/origins.ts).
+    trustedOrigins: (request) => {
+      const origin = request?.headers.get("origin") ?? undefined
+      const matched = origin !== undefined && isAllowedOrigin(origin, origins) ? [origin] : []
+      return [...origins.exact, ...matched]
+    },
     database: drizzleAdapter(database, { provider: "pg", schema: authSchema, transaction: true }),
     telemetry: { enabled: false },
     rateLimit: { enabled: false },
@@ -68,6 +79,18 @@ export function createAuth({ config, db, mailer, log }: AuthDeps) {
       requireEmailVerification: true,
       // Sign-up answers the same way whether or not the e-mail is taken (no user enumeration).
       autoSignIn: false,
+      resetPasswordTokenExpiresIn: RESET_PASSWORD_EXPIRES_IN_SECONDS,
+      // A reset signs out every other device (a stolen session does not survive it).
+      revokeSessionsOnPasswordReset: true,
+      // The link goes straight to the web page, which posts the token to /reset-password.
+      // The answer is the same whether the e-mail exists or not (better-auth).
+      sendResetPassword: ({ user, token }) =>
+        mailer.send(
+          resetPasswordMail({
+            to: user.email,
+            url: `${webUrl}/redefinir-senha?token=${encodeURIComponent(token)}`,
+          }),
+        ),
     },
     emailVerification: {
       sendOnSignUp: true,

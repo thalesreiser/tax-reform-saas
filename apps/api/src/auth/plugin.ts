@@ -37,10 +37,17 @@ export interface AuthRoutesOptions {
 }
 
 const WINDOW_MS = 15 * 60 * 1000
-/** Sign-in and sign-up attempts per IP and per e-mail in 15 minutes. */
+/** Credential attempts (sign-in, sign-up, e-mails, password reset) per IP and per e-mail in 15 minutes. */
 export const CREDENTIAL_LIMITS = { perIp: 30, perEmail: 5 } as const
 /** Endpoints that take a password or send an e-mail to the address in the body. */
-const CREDENTIAL_PATHS = new Set(["/sign-in/email", "/sign-up/email", "/send-verification-email"])
+const CREDENTIAL_PATHS = new Set([
+  "/sign-in/email",
+  "/sign-up/email",
+  "/send-verification-email",
+  "/request-password-reset",
+  // No e-mail in the body: limited per IP only.
+  "/reset-password",
+])
 /** Body and query fields that better-auth passes to uuid columns: malformed ids are a 400. */
 const ID_FIELDS = ["id", "invitationId", "organizationId", "memberId", "userId"]
 /** Actions whose better-auth hooks do not say who acted: the session is read before them. */
