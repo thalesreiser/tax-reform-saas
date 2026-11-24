@@ -133,14 +133,14 @@ describe("reference data routes", () => {
     const res = await app.inject({
       url: "/v1/reference/ncm?date=2027-01-01&q=CAVALOS&pageSize=1&page=2",
     })
-    expect(res.json().data).toEqual({
+    expect(res.json<{ data: unknown }>().data).toEqual({
       items: [{ codigo: "01012900", descricao: "Outros cavalos" }],
       page: 2,
       pageSize: 1,
       total: 2,
     })
     const byCode = await app.inject({ url: "/v1/reference/ncm?date=2027-01-01&q=2203" })
-    expect(byCode.json().data.total).toBe(1)
+    expect(byCode.json<{ data: { total: number } }>().data.total).toBe(1)
   })
 
   it("maps engine failures to generic problem details and does not cache them", async () => {

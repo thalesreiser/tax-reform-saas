@@ -194,7 +194,7 @@ export const referenceRoutes: FastifyPluginAsyncZod<ReferenceOptions> = (app, op
       const etag = `"${createHash("sha256").update(JSON.stringify(body)).digest("base64url")}"`
       reply.header("cache-control", maxAge).header("etag", etag)
       if (request.headers["if-none-match"] === etag) return reply.code(304).send()
-      return reply.code(200).send(body as never)
+      return reply.code(200).send(body)
     } catch (error) {
       if (!(error instanceof EngineFailure)) throw error
       const failure = error.error
