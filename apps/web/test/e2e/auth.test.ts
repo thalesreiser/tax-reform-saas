@@ -69,6 +69,49 @@ describe("auth screens (server-rendered, mocked API)", () => {
     for (const [, url] of urls) expect(url).not.toMatch(/^(?:[a-z]+:)?\/\//i)
   })
 
+  it.each(["/entrar", "/cadastro"])("%s puts the form beside the brand panel", async (path) => {
+    const html = await page(path)
+    const form = html.search(/<section[^>]*aria-labelledby="[^"]+"/)
+    const brand = html.search(/<aside[^>]*aria-label="Sobre o produto"/)
+    expect(form).toBeGreaterThan(-1)
+    // The form comes first in reading order (and on phones); the panel follows it.
+    expect(brand).toBeGreaterThan(form)
+    expect(html).toMatch(
+      /<svg[^>]*role="img"[^>]*aria-label="Exemplo ilustrativo com dados fictícios/,
+    )
+    // The header carries the wordmark; the card no longer repeats it.
+    expect(html.match(/tax-reform-saas<\/span>/g)).toHaveLength(1)
+  })
+
+  it("shows in the header only the auth action of the other page", async () => {
+    const header = (html: string) => html.slice(html.indexOf("<header"), html.indexOf("</header>"))
+    const signIn = header(await page("/entrar"))
+    expect(signIn).toMatch(/href="\/cadastro"/)
+    expect(signIn).not.toMatch(/href="\/entrar"/)
+    const signUp = header(await page("/cadastro?redirect=/convites/abc"))
+    expect(signUp).toMatch(/href="\/entrar\?redirect=(?:%2F|\/)convites(?:%2F|\/)abc"/)
+    expect(signUp).not.toMatch(/href="\/cadastro/)
+  })
+
+  it.each([
+    ["/entrar", "current-password"],
+    ["/cadastro", "new-password"],
+    ["/redefinir-senha?token=abc", "new-password"],
+  ])("%s has a password field with an accessible show/hide toggle", async (path, autocomplete) => {
+    const html = await page(path)
+    expect(html).toMatch(
+      new RegExp(`<input[^>]*type="password"[^>]*autocomplete="${autocomplete}"`),
+    )
+    expect(html).toMatch(
+      /<button[^>]*aria-label="Mostrar senha"[^>]*aria-pressed="false"|<button[^>]*aria-pressed="false"[^>]*aria-label="Mostrar senha"/,
+    )
+  })
+
+  it("states the minimum password length under new-password fields", async () => {
+    expect(await page("/cadastro")).toContain("Use pelo menos 10 caracteres.")
+    expect(await page("/redefinir-senha?token=abc")).toContain("Use pelo menos 10 caracteres.")
+  })
+
   it("asks for the office name on sign-up, except for invitees", async () => {
     expect(await page("/cadastro")).toContain("Nome do escritório")
     const invitee = await page(`/cadastro?redirect=/convites/${INVITATION_ID}`)
@@ -95,6 +138,29 @@ describe("auth screens (server-rendered, mocked API)", () => {
     const html = await page("/painel", COOKIE)
     expect(html).toContain("Escritório Fictício Ltda")
     expect(html).toContain("Seu papel: Proprietário")
+  })
+
+  it("shows empty KPI tiles and a disabled first action, never sample numbers", async () => {
+    const html = await page("/painel", COOKIE)
+    const tiles = html.slice(html.search(/<ul[^>]*aria-label="Resumo do escritório"/))
+    for (const label of ["Clientes", "Simulações no mês", "Chamadas à API"]) {
+      expect(tiles).toContain(label)
+    }
+    const text = tiles.slice(0, tiles.indexOf("</ul>")).replace(/<[^>]*>/g, "")
+    expect(text).toContain("—")
+    expect(text).not.toMatch(/\d/)
+    expect(html).toContain("Cadastre o primeiro cliente para começar.")
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>[\s\S]*?Cadastrar cliente/)
+    expect(html).toContain("Em breve")
+  })
+
+  it("shows the office and an account menu in the header when signed in", async () => {
+    const html = await page("/painel", COOKIE)
+    const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"))
+    expect(header).toContain("Escritório Fictício Ltda")
+    expect(header).toMatch(/<button[^>]*aria-haspopup="menu"[\s\S]*?Ana Teste/)
+    expect(header).not.toMatch(/href="\/(?:entrar|cadastro)"/)
+    expect(header).toMatch(/aria-label="Mudar para modo escuro"/)
   })
 
   it("asks anonymous invitees to sign in or sign up, coming back to the invitation", async () => {

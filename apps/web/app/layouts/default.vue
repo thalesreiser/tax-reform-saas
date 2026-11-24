@@ -1,7 +1,14 @@
 <script setup lang="ts">
 const { t, locale } = useI18n()
 const { appName } = useAppConfig()
+const route = useRoute()
+const { session } = useAuth()
 const year = new Date().getFullYear()
+
+// Switching between sign-in and sign-up keeps the return path (e.g. an invitation).
+const authQuery = computed(() =>
+  typeof route.query.redirect === "string" ? { redirect: route.query.redirect } : {},
+)
 
 useHead({
   htmlAttrs: { lang: locale },
@@ -20,7 +27,24 @@ useHead({
 
     <UHeader :title="appName" to="/" :toggle="false">
       <template #title>
-        <AppWordmark />
+        <AppWordmark collapse />
+      </template>
+      <template #right>
+        <AppAccountMenu v-if="session" />
+        <template v-else>
+          <UButton
+            v-if="route.path !== '/entrar'"
+            :to="{ path: '/entrar', query: authQuery }"
+            color="neutral"
+            variant="ghost"
+          >
+            {{ t("layout.signIn") }}
+          </UButton>
+          <UButton v-if="route.path !== '/cadastro'" :to="{ path: '/cadastro', query: authQuery }">
+            {{ t("layout.signUp") }}
+          </UButton>
+        </template>
+        <UColorModeButton />
       </template>
     </UHeader>
 

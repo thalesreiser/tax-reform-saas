@@ -1,10 +1,16 @@
 {
   "layout": {
     "skipToContent": "Pular para o conteúdo principal",
-    "footer": "© {year} {appName}"
+    "footer": "© {year} {appName}",
+    "signIn": "Entrar",
+    "signUp": "Criar conta"
   },
   "home": {
-    "description": "Em construção."
+    "eyebrow": "Reforma tributária · 2026 a 2033",
+    "title": "Mostre a cada cliente quanto a reforma tributária muda para ele",
+    "description": "Simule a carga atual e a da reforma para cada empresa da sua carteira, ano a ano de 2026 a 2033, e envie ao empresário um resumo que ele entende.",
+    "signUp": "Criar conta",
+    "signIn": "Já tenho conta"
   },
   "error": {
     "notFound": {
@@ -28,7 +34,10 @@
       "email": "E-mail",
       "password": "Senha",
       "newPassword": "Nova senha",
-      "passwordHelp": "Pelo menos {min} caracteres."
+      "passwordHelp": "Use pelo menos {min} caracteres.",
+      "passwordMissing": "Falta {count} caractere. | Faltam {count} caracteres.",
+      "passwordOk": "Tamanho mínimo atingido.",
+      "showPassword": "Mostrar senha"
     },
     "validation": {
       "emailRequired": "Informe seu e-mail.",
@@ -55,7 +64,7 @@
     },
     "signIn": {
       "title": "Entrar",
-      "description": "Acesse o painel do seu escritório.",
+      "description": "Acesse a carteira de clientes do seu escritório.",
       "submit": "Entrar",
       "forgot": "Esqueci minha senha",
       "noAccount": "Ainda não tem conta?",
@@ -63,7 +72,7 @@
     },
     "signUp": {
       "title": "Criar conta",
-      "description": "Cadastre-se para usar o sistema.",
+      "description": "Simule a reforma tributária para cada cliente e mostre o impacto ano a ano, de 2026 a 2033.",
       "submit": "Criar conta",
       "hasAccount": "Já tem conta?",
       "checkEmailTitle": "Confira seu e-mail",
@@ -85,7 +94,7 @@
     },
     "reset": {
       "title": "Redefinir senha",
-      "description": "Escolha uma nova senha.",
+      "description": "Escolha uma nova senha para acessar o seu escritório.",
       "submit": "Salvar nova senha",
       "again": "Pedir um novo link",
       "doneTitle": "Senha alterada",
@@ -100,12 +109,39 @@
       "switchAccount": "Entrar com outro e-mail"
     },
     "backToSignIn": "Voltar para entrar",
-    "signOut": "Sair"
+    "signOut": "Sair",
+    "brand": {
+      "label": "Sobre o produto",
+      "eyebrow": "Reforma tributária · 2026 a 2033",
+      "title": "Quanto a reforma muda para cada cliente, ano a ano.",
+      "point1": "Compare a carga atual com a da reforma em cada ano da transição.",
+      "point2": "CBS, IBS e IS calculados pelas calculadoras oficiais da Receita Federal.",
+      "point3": "Um resumo simples para enviar ao empresário pelo celular.",
+      "chartTitle": "Carga atual × reforma, 2026 a 2033",
+      "chartLegendCurrent": "Sistema atual",
+      "chartLegendReform": "Com a reforma",
+      "chartDescription": "Exemplo ilustrativo com dados fictícios: a carga sobre a receita cai de 14,2% em 2026 para 12,1% em 2033.",
+      "kpi": "−2,1 p.p.",
+      "kpiLabel": "de carga em 2033 (exemplo)",
+      "note": "Exemplo ilustrativo com dados fictícios."
+    }
   },
   "dashboard": {
     "title": "Painel",
     "role": "Seu papel: {role}",
-    "placeholder": "Em construção.",
+    "kpis": {
+      "label": "Resumo do escritório",
+      "empty": "Sem dados ainda",
+      "clients": "Clientes",
+      "clientsHint": "Nenhum cliente cadastrado",
+      "simulations": "Simulações no mês",
+      "simulationsHint": "Nenhuma simulação neste mês",
+      "apiCalls": "Chamadas à API",
+      "apiCallsHint": "Nenhuma chamada neste mês"
+    },
+    "start": "Cadastre o primeiro cliente para começar.",
+    "addClient": "Cadastrar cliente",
+    "soon": "Em breve",
     "createOffice": {
       "title": "Crie seu escritório",
       "description": "Dê um nome ao seu escritório para começar.",

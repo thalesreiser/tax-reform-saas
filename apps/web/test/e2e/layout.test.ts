@@ -23,12 +23,22 @@ describe("base layout (server-rendered)", () => {
     expect(footer).toBeGreaterThan(main)
   })
 
-  it("renders the placeholder home page in pt-BR", async () => {
+  it("renders the placeholder home page in pt-BR with its two entry points", async () => {
     const html = await $fetch<string>("/")
-    expect(html).toContain("<h1")
-    expect(html).toContain("tax-reform-saas")
-    expect(html).toContain("Em construção.")
+    expect(html.match(/<h1/g)).toHaveLength(1)
+    expect(html).toContain("Mostre a cada cliente quanto a reforma tributária muda para ele")
+    expect(html).toMatch(/<a[^>]*href="\/cadastro"[^>]*>[\s\S]*?Criar conta/)
+    expect(html).toMatch(/<a[^>]*href="\/entrar"[^>]*>[\s\S]*?Já tenho conta/)
     expect(html).toContain(`© ${new Date().getFullYear()} tax-reform-saas`)
+  })
+
+  it("offers sign-in, sign-up and a labelled colour-mode toggle in the header", async () => {
+    const html = await $fetch<string>("/")
+    const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"))
+    expect(header).toContain("tax-reform-saas")
+    expect(header).toMatch(/href="\/entrar"[^>]*>[\s\S]*?Entrar/)
+    expect(header).toMatch(/href="\/cadastro"[^>]*>[\s\S]*?Criar conta/)
+    expect(header).toMatch(/<button[^>]*aria-label="Mudar para modo escuro"/)
   })
 
   it("loads fonts, styles and scripts only from the app itself", async () => {

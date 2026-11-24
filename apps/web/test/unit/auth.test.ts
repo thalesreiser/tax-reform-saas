@@ -4,6 +4,7 @@ import {
   emailSchema,
   newPasswordSchema,
   officeSlug,
+  passwordHint,
   safeRedirect,
   signInSchema,
   signUpSchema,
@@ -106,6 +107,16 @@ describe("API error messages", () => {
 
   it("reports network failures separately", () => {
     expect(authErrorMessage(new TypeError("fetch failed")).key).toBe("auth.errors.network")
+  })
+})
+
+describe("passwordHint", () => {
+  it("states the minimum, counts what is missing and confirms when it is reached", () => {
+    expect(passwordHint(0)).toEqual({ key: "auth.fields.passwordHelp", count: 0 })
+    expect(passwordHint(1)).toEqual({ key: "auth.fields.passwordMissing", count: 9 })
+    expect(passwordHint(9)).toEqual({ key: "auth.fields.passwordMissing", count: 1 })
+    expect(passwordHint(10)).toEqual({ key: "auth.fields.passwordOk", count: 0 })
+    expect(passwordHint(40)).toEqual({ key: "auth.fields.passwordOk", count: 0 })
   })
 })
 

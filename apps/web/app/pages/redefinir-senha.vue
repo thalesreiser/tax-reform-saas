@@ -14,6 +14,10 @@ useHead({ title: t("auth.reset.title") })
 
 const schema = newPasswordSchema(t)
 const state = reactive({ password: "" })
+const hint = computed(() => {
+  const { key, count } = passwordHint(state.password.length)
+  return t(key, { min: PASSWORD_MIN_LENGTH, count }, count)
+})
 const loading = ref(false)
 const error = ref<string | null>(null)
 const done = ref(false)
@@ -51,18 +55,8 @@ async function onSubmit(event: FormSubmitEvent<NewPasswordInput>) {
     <template v-else>
       <UAlert v-if="error" role="alert" color="error" variant="subtle" :description="error" />
       <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-        <UFormField
-          :label="t('auth.fields.newPassword')"
-          name="password"
-          :help="t('auth.fields.passwordHelp', { min: PASSWORD_MIN_LENGTH })"
-          required
-        >
-          <UInput
-            v-model="state.password"
-            type="password"
-            autocomplete="new-password"
-            class="w-full"
-          />
+        <UFormField :label="t('auth.fields.newPassword')" name="password" :help="hint" required>
+          <PasswordInput v-model="state.password" autocomplete="new-password" />
         </UFormField>
         <UButton type="submit" block size="lg" :loading="loading">
           {{ t("auth.reset.submit") }}

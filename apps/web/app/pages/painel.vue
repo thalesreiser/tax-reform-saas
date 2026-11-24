@@ -7,24 +7,12 @@ import type { OfficeInput } from "~/utils/auth"
 definePageMeta({ middleware: "auth" })
 
 const { t } = useI18n()
-const { getOffice, createOffice, signOut } = useAuth()
+const { createOffice } = useAuth()
 const describe = useAuthMessage()
 
 useHead({ title: t("dashboard.title") })
 
-// 403: signed in but without an office yet. Any other failure is shown as a generic error.
-const {
-  data: office,
-  error: loadError,
-  refresh,
-} = await useAsyncData("office", async () => {
-  try {
-    return await getOffice()
-  } catch (e) {
-    if (errorStatus(e) === 403) return null
-    throw e
-  }
-})
+const { data: office, error: loadError, refresh } = await useOffice()
 
 const schema = officeSchema(t)
 const state = reactive({ officeName: "" })
@@ -57,15 +45,13 @@ async function onSubmit(event: FormSubmitEvent<OfficeInput>) {
   }
 }
 
-async function leave() {
-  await signOut()
-  await navigateTo("/entrar")
-}
+// Illustrative tiles: no data source yet (FE-02.1), so they only show the empty state.
+const kpis = ["clients", "simulations", "apiCalls"] as const
 </script>
 
 <template>
-  <UContainer class="py-10 sm:py-16">
-    <section class="surface-glass p-6 sm:p-10">
+  <UContainer class="space-y-6 py-10 sm:py-16">
+    <section class="surface-glass motion-enter p-6 sm:p-10">
       <template v-if="office">
         <p class="text-sm font-semibold text-primary">{{ t("dashboard.title") }}</p>
         <h1 class="mt-2 text-3xl font-semibold tracking-tight text-highlighted">
@@ -74,7 +60,11 @@ async function leave() {
         <p class="mt-2 text-muted">
           {{ t("dashboard.role", { role: t(`roles.${office.role}`) }) }}
         </p>
-        <p class="mt-6 text-default">{{ t("dashboard.placeholder") }}</p>
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <p class="text-default">{{ t("dashboard.start") }}</p>
+          <UButton icon="i-lucide-plus" disabled>{{ t("dashboard.addClient") }}</UButton>
+          <UBadge color="neutral" variant="subtle">{{ t("dashboard.soon") }}</UBadge>
+        </div>
       </template>
 
       <UAlert
@@ -100,10 +90,27 @@ async function leave() {
           </UButton>
         </UForm>
       </div>
-
-      <UButton class="mt-8" variant="outline" color="neutral" @click="leave">
-        {{ t("auth.signOut") }}
-      </UButton>
     </section>
+
+    <ul v-if="office" :aria-label="t('dashboard.kpis.label')" class="grid gap-4 sm:grid-cols-3">
+      <li
+        v-for="(kpi, i) in kpis"
+        :key="kpi"
+        class="motion-enter p-5"
+        :class="i === 0 ? 'surface-brand' : 'surface-glass'"
+      >
+        <p class="text-sm" :class="i === 0 ? '' : 'text-muted'">{{ t(`dashboard.kpis.${kpi}`) }}</p>
+        <p
+          class="mt-1 text-3xl font-semibold tabular-nums"
+          :class="i === 0 ? '' : 'text-highlighted'"
+        >
+          <span aria-hidden="true">—</span>
+          <span class="sr-only">{{ t("dashboard.kpis.empty") }}</span>
+        </p>
+        <p class="mt-1 text-sm" :class="i === 0 ? '' : 'text-muted'">
+          {{ t(`dashboard.kpis.${kpi}Hint`) }}
+        </p>
+      </li>
+    </ul>
   </UContainer>
 </template>
