@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm"
-import type { FastifyRequest } from "fastify"
+import type { FastifyReply, FastifyRequest } from "fastify"
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod"
 import { z } from "zod"
 import { recordAudit } from "../audit/events.js"
@@ -197,8 +197,10 @@ export const officeSettingsRoutes: FastifyPluginAsyncZod<OfficeSettingsOptions> 
         .header("cache-control", "private, no-cache")
         .header("x-content-type-options", "nosniff")
         .header("content-security-policy", "default-src 'none'")
-      if (request.headers["if-none-match"] === etag) return reply.code(304).send()
-      return reply.type(logo.contentType).send(logo.data)
+      // Binary body: outside the typed (JSON) responses of this route.
+      const raw = reply as unknown as FastifyReply
+      if (request.headers["if-none-match"] === etag) return raw.code(304).send()
+      return raw.type(logo.contentType).send(logo.data)
     },
   )
 
