@@ -2,6 +2,7 @@ import { STATUS_CODES } from "node:http"
 import type { FastifyError, FastifyReply, FastifyRequest } from "fastify"
 import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod"
 import { z } from "zod"
+import { captureServerError } from "./sentry.js"
 
 export const PROBLEM_CONTENT_TYPE = "application/problem+json"
 
@@ -76,5 +77,6 @@ export function errorHandler(
   }
 
   request.log.error({ err: error }, "unhandled error")
+  captureServerError(error, request)
   return sendProblem(reply, problem(request, 500))
 }

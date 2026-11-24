@@ -14,5 +14,8 @@
   "vars": {
     // Public API (Fly.io, ADR 008). Not a secret: it is also visible in the browser.
     "NUXT_PUBLIC_API_URL": "https://trs-tax-api.fly.dev",
+    // Sentry environment name; error tracking stays off until NUXT_PUBLIC_SENTRY_DSN is set in the
+    // Cloudflare dashboard (deploy/README.md, Observability).
+    "NUXT_PUBLIC_SENTRY_ENVIRONMENT": "staging",
   },
 }

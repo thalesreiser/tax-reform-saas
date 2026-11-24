@@ -18,6 +18,8 @@
     "@fontsource-variable/outfit": "catalog:",
     "@nuxt/ui": "catalog:",
     "@nuxtjs/i18n": "catalog:",
+    "@sentry/nuxt": "catalog:",
+    "@sentry/vue": "catalog:",
     "nuxt": "catalog:",
     "tailwindcss": "catalog:",
     "vue": "catalog:",

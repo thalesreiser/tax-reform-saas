@@ -79,6 +79,58 @@ After the first successful `migrate` job (it creates the `trs_app` role):
 3. Set the repository (or `staging` environment) variable `API_DATABASE_READY` to `true` and start
    "Deploy staging" by hand on `develop`.
 
+## Observability
+
+Errors go to Sentry, logs stay with each host, and uptime alerts are GitHub issues (EST-03.3).
+
+### Errors (Sentry)
+
+Error tracking is **off until a DSN is set**; without one the SDKs are not started and nothing is
+sent. Once a Sentry project exists (free Developer plan), set:
+
+- **API:** `SENTRY_DSN` as a Fly secret, typed into a hidden prompt:
+  `read -rs SENTRY_DSN; printf 'SENTRY_DSN=%s
+' "$SENTRY_DSN" | fly secrets import --app trs-tax-api; unset SENTRY_DSN`.
+  `SENTRY_ENVIRONMENT=staging` is in `api.toml`; the release is `APP_VERSION` (the git sha).
+  Performance tracing stays off (`SENTRY_TRACES_SAMPLE_RATE=0`) unless decided otherwise.
+- **Web:** `NUXT_PUBLIC_SENTRY_DSN` in the Cloudflare dashboard (Workers, `trs-web`, Settings,
+  Variables and secrets) for the production and preview builds. A DSN is public by design: it only
+  lets clients send events.
+
+What is sent: API 5xx and unhandled errors only (4xx are expected), tagged with `request_id` (the
+`x-request-id` header and the `requestId` of the problem details), the route pattern, the method and
+a one-way hash of the office id. Web browser and Worker errors, without session replay. Every event
+passes a scrubber (`apps/api/src/sentry.ts`, `apps/web/shared/utils/sentry-scrub.ts`) that drops
+headers, cookies, query strings, bodies, form values, user data and breadcrumbs, and masks CNPJ, CPF
+and e-mail addresses in messages. With a DSN, the browser sends only to the ingest host in that
+DSN (`o<id>.ingest.sentry.io`); the SDK itself is a chunk served by the app.
+
+To find the error behind a support request, search Sentry for `request_id:<id>`.
+
+### Logs
+
+- **API:** JSON lines (pino) with `reqId`, `req.method`, `req.route` (the route pattern, never the
+  URL or query string), `res.statusCode` and `responseTime` (ms); credentials are redacted.
+  Read them with `fly logs --app trs-tax-api` (live) or in the Fly dashboard (Monitoring). Filter
+  one request with `fly logs --app trs-tax-api | grep <request id>`.
+- **Engines:** `fly logs --app trs-engine-rr` / `trs-engine-sn`.
+- **Web:** Workers observability is enabled in `apps/web/wrangler.jsonc`; logs are in the Cloudflare
+  dashboard (Workers, `trs-web`, Observability) or live with `wrangler tail trs-web`.
+
+### Uptime
+
+`.github/workflows/uptime.yml` runs every 30 minutes (and by hand). It requests the web home and the
+API `/health`, retrying for about a minute to cover a cold start. When either is down the job fails
+and opens one issue labelled `uptime` (later failures comment on it); the first good run closes it.
+GitHub e-mails the failure to watchers. Scheduled workflows run only on the default branch and may
+start a few minutes late. Inside Fly, the `/health` check in `api.toml` restarts a broken machine.
+
+**Cost.** Each API ping starts the stopped machine, which stops again after a few idle minutes:
+about 48 pings x ~5 min = ~4 h/day, ~120 h/month of a shared-cpu-1x 512MB (about US$ 0.0044/h), so
+roughly US$ 0.55/month of the US$ 5 allowance. The engines are not woken (`/health` does not call
+them). Every 15 minutes would double this and keep the machine up a third of the time; pinging only
+the web would cost nothing but miss API outages. An external uptime service is a later option.
+
 ## Rollback
 
 - List releases and their images: `fly releases --app <app> --image`.

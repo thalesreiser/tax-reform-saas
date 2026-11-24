@@ -1,0 +1,71 @@
+name: Uptime
+
+# Uptime checks without an external service (EST-03.3, RNF-09): requests the staging web home and
+# the API /health. A failure fails the job and opens (or comments on) one issue labelled `uptime`;
+# the next good run closes it. Cost: see deploy/README.md, Observability.
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+
+env:
+  WEB_URL: https://trs-web.thausreiser.workers.dev/
+  API_HEALTH_URL: https://trs-tax-api.fly.dev/health
+
+jobs:
+  check:
+    name: Check staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Request the web home and the API health
+        id: probe
+        shell: bash
+        run: |
+          # Retries cover a cold start: the API machine scales to zero and takes a few seconds (up
+          # to about 60 s with the proxy) to answer the first request.
+          probe() {
+            curl --silent --show-error --fail --location --output /dev/null \
+              --max-time 30 --retry 6 --retry-delay 10 --retry-all-errors \
+              --write-out '%{http_code} in %{time_total}s' "$1"
+          }
+          down=""
+          for url in "$WEB_URL" "$API_HEALTH_URL"; do
+            if result=$(probe "$url"); then
+              echo "up: $url ($result)"
+            else
+              echo "::error::down: $url"
+              down="$down $url"
+            fi
+          done
+          echo "down=${down# }" >> "$GITHUB_OUTPUT"
+
+      - name: Open, update or close the uptime issue
+        if: always() && steps.probe.outcome == 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DOWN: ${{ steps.probe.outputs.down }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          issue=$(gh issue list --label uptime --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$DOWN" ]; then
+            body="Down at $(date -u +%FT%TZ): $DOWN. Run: $RUN_URL"
+            if [ -n "$issue" ]; then
+              gh issue comment "$issue" --body "$body"
+            else
+              gh label create uptime --color B60205 --description "Staging uptime check" --force
+              gh issue create --title "Staging is down" --label uptime --body "$body"
+            fi
+            exit 1
+          elif [ -n "$issue" ]; then
+            gh issue close "$issue" --comment "Back up at $(date -u +%FT%TZ). Run: $RUN_URL"
+          fi
