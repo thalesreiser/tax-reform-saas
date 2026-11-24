@@ -1,0 +1,9 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".objetos[0].tribCalc.vCBSSN": "116.12",
+    ".objetos[0].tribCalc.pCBSSN": "1.1612",
+    ".resolucaoAliquotas.itens[0].pCBSSN": "1.16123456789"
+  }
+}

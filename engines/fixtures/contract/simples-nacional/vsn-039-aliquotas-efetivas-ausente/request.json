@@ -1,0 +1,19 @@
+{
+  "id": "op-1",
+  "versao": "3.0.0",
+  "data": "2027-03-15",
+  "tpDoc": "91",
+  "opSimpNac": "3",
+  "regApIBSCBSSN": "1",
+  "regApTribSN": "1",
+  "itens": [
+    {
+      "numero": 1,
+      "cClassTrib": "000001",
+      "baseCalculo": "10000.00",
+      "cAtivSN": "07",
+      "tribISSQN": "1",
+      "tpRetISSQN": "1"
+    }
+  ]
+}

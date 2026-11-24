@@ -1,0 +1,15 @@
+{
+  "endpoint": "regime-regular/regime-geral",
+  "status": 200,
+  "values": {
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS": null,
+    ".objetos[0].tribCalc.IS": null,
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBSMono.gMonoPadrao.qBCMono": "10",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBSMono.gMonoPadrao.adRemCBS": "1.47",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBSMono.gMonoPadrao.vCBSMono": "14.70",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBSMono.gMonoPadrao.vIBSMono": "14.7",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBSMono.gMonoReten": null,
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBSMono.gMonoRet": null,
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBSMono.gMonoDif": null
+  }
+}

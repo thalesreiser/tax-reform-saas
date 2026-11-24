@@ -1,0 +1,9 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 422,
+  "values": {
+    ".errors[0].code": "VSN-039",
+    ".errors[0].pointer": "#/aliquotasEfetivas",
+    ".errors[1]": null
+  }
+}

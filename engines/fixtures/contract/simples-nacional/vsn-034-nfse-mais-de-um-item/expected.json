@@ -1,0 +1,8 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 422,
+  "values": {
+    ".errors[0].code": "VSN-034",
+    ".errors[1]": null
+  }
+}

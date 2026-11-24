@@ -80,3 +80,26 @@ Update the tag and its commit SHA together in `versions.env`
 (`gh api repos/<repo>/commits/<tag> --jq .sha`), then check the upstream `CHANGELOG.md` and
 `docs/exemplos.md`: if the official example changed, update the fixture from upstream, never to make
 CI pass.
+
+## Golden contract tests
+
+`fixtures/contract/<engine>/<case>/` holds every upstream example we check against the running
+containers (MOT-01.5, RNF-06): the `docs/exemplos.md` examples, the OpenAPI `EXEMPLO_*` requests and
+the upstream integration tests that assert values, all at the pinned tags. Each case has:
+
+- `request.json`: the upstream request, as published or as the upstream test builds it.
+- `expected.json`: `endpoint`, HTTP `status` and `values`, a map from a path in the raw response
+  (`.objetos[3].erros[0].code`) to the value upstream asserts, as text. Decimals are compared by
+  decimal equality (never as floats); `null` means absent or null.
+- `source.md`: the upstream file, line, test name and tag the values come from.
+
+`packages/engine-client/tests/engines/contract.test.ts` runs every case through the client in the
+`test:engines` step of `engine-images.yml` (on changes here or in the client, and weekly) and prints
+a per-case diff on failure.
+
+To add a case: create the folder with the three files, assert only what the upstream example or test
+asserts, and link the exact source. A value without an upstream source does not belong here.
+
+**A contract test failing after a tag bump** means the engine changed its results. Read the upstream
+`CHANGELOG.md` and the changed example or test first; update `expected.json` only to what upstream
+now publishes, citing the new source in `source.md`. Never edit an expectation just to make CI pass.

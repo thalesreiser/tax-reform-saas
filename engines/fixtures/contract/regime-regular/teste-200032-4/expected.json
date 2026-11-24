@@ -1,0 +1,26 @@
+{
+  "endpoint": "regime-regular/regime-geral",
+  "status": 200,
+  "values": {
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.vBC": "247.30",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gCBS.pCBS": "0.00",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gCBS.vCBS": "0",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSUF.pIBSUF": "0.00",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSUF.vIBSUF": "0",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSMun.pIBSMun": "0.00",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSMun.vIBSMun": "0",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gCBS.gRed": null,
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSUF.gRed": null,
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gIBSMun.gRed": null,
+    ".objetos[0].tribCalc.IS.vBCIS": "200.00",
+    ".objetos[0].tribCalc.IS.pIS": "13.00",
+    ".objetos[0].tribCalc.IS.pISEspec": "21.30",
+    ".objetos[0].tribCalc.IS.vIS": "47.30",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gTribRegular.pAliqEfetRegCBS": "3.36",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gTribRegular.vTribRegCBS": "8.31",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gTribRegular.pAliqEfetRegIBSUF": "0.02",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gTribRegular.vTribRegIBSUF": "0.05",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gTribRegular.pAliqEfetRegIBSMun": "0.02",
+    ".objetos[0].tribCalc.IBSCBS.gIBSCBS.gTribRegular.vTribRegIBSMun": "0.05"
+  }
+}

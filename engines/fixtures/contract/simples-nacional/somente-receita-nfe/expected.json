@@ -1,0 +1,15 @@
+{
+  "endpoint": "simples-nacional/nao-assistido",
+  "status": 200,
+  "values": {
+    ".oper.regimeApuracao": "SOMENTE_RECEITA",
+    ".resolucaoAliquotas": null,
+    ".objetos[0].estadoItem": "NAO_CALCULADO",
+    ".objetos[0].tribCalc.vRBSNitem": "1000.00",
+    ".objetos[0].tribCalc.tpRBSN": "1",
+    ".objetos[0].tribCalc.vBC": null,
+    ".objetos[1].tribCalc.vRBSNitem": "0.00",
+    ".total.vRBSNtot": "1000.00",
+    ".total.vCBSSNtot": null
+  }
+}
