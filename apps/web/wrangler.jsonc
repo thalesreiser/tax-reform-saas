@@ -1,0 +1,18 @@
+// Cloudflare Workers config for the web app (ADR 001, ADR 008). Built with NITRO_PRESET=cloudflare_module;
+// Workers Builds deploys `develop` as staging and gives each pull request its own preview URL.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "trs-web",
+  "main": "./.output/server/index.mjs",
+  "compatibility_date": "2026-11-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./.output/public",
+    "binding": "ASSETS",
+  },
+  "observability": { "enabled": true },
+  "vars": {
+    // Public API (Fly.io, ADR 008). Not a secret: it is also visible in the browser.
+    "NUXT_PUBLIC_API_URL": "https://trs-tax-api.fly.dev",
+  },
+}
