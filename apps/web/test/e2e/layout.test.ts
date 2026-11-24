@@ -25,7 +25,7 @@ describe("base layout (server-rendered)", () => {
 
   it("renders the placeholder home page in pt-BR with its two entry points", async () => {
     const html = await $fetch<string>("/")
-    expect(html.match(/<h1/g)).toHaveLength(1)
+    expect(html.match(/<h1b/g)).toHaveLength(1)
     expect(html).toContain("Mostre a cada cliente quanto a reforma tributária muda para ele")
     expect(html).toMatch(/<a[^>]*href="\/cadastro"[^>]*>[\s\S]*?Criar conta/)
     expect(html).toMatch(/<a[^>]*href="\/entrar"[^>]*>[\s\S]*?Já tenho conta/)
