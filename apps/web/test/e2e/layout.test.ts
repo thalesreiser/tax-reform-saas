@@ -58,6 +58,8 @@ describe("base layout (server-rendered)", () => {
     expect(css).not.toMatch(/url\(\s*["']?(?:https?:)?\/\//i)
     expect(css).not.toMatch(/@import\s+(?:url\()?\s*["']?(?:https?:)?\/\//i)
     expect(html).not.toMatch(/fonts\.(?:googleapis|gstatic|bunny)\.|use\.typekit\.net/)
+    // Error tracking is off without NUXT_PUBLIC_SENTRY_DSN: no ingest host and no tracing headers.
+    expect(html).not.toMatch(/sentry\.io|sentry-trace|baggage/i)
   })
 
   it("renders the error page inside the layout with a 404 status", async () => {

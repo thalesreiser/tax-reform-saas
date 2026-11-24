@@ -23,6 +23,8 @@ describe("loadConfig", () => {
       CNPJ_LOOKUP_URL: "https://brasilapi.com.br/api/cnpj/v1",
       CNPJ_LOOKUP_TIMEOUT_MS: 8000,
       CORS_EXTRA_ORIGINS: [],
+      SENTRY_ENVIRONMENT: "development",
+      SENTRY_TRACES_SAMPLE_RATE: 0,
     })
   })
 

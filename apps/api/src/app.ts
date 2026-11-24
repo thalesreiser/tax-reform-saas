@@ -33,6 +33,20 @@ const REDACTED = [
   'res.headers["set-cookie"]',
 ]
 
+/**
+ * Request log line: the route pattern (e.g. `/v1/clients/:id`) instead of the URL, so ids and query
+ * strings (which may carry fiscal data) never reach the logs. No headers or body.
+ */
+export function serializeRequest(request: {
+  method?: string
+  routeOptions?: { url?: string | undefined }
+}) {
+  return {
+    method: request.method,
+    route: request.routeOptions?.url ?? "unmatched",
+  }
+}
+
 export interface AppDeps {
   /** E-mail transport; defaults to the log transport (no provider yet). */
   mailer?: Mailer
@@ -46,7 +60,11 @@ export interface AppDeps {
  */
 export async function buildApp(config: Config, deps: AppDeps = {}) {
   const base = Fastify({
-    logger: { level: config.LOG_LEVEL, redact: { paths: REDACTED, censor: "[redacted]" } },
+    logger: {
+      level: config.LOG_LEVEL,
+      redact: { paths: REDACTED, censor: "[redacted]" },
+      serializers: { req: serializeRequest },
+    },
     // The id is always generated here: a client-supplied id is not trusted and never echoed.
     genReqId: () => randomUUID(),
     requestIdHeader: false,
