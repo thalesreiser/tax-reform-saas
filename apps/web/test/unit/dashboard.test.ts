@@ -33,6 +33,7 @@ describe("dashboard view model", () => {
     expect(NAV_ITEMS.filter((i) => i.to !== null).map((i) => i.id)).toEqual([
       "dashboard",
       "clients",
+      "office",
     ])
   })
 
