@@ -27,4 +27,4 @@ ends in an ADR.
 | Q-07 | The extension's first target is the Emissor Nacional da NFS-e; the form mapping and its risks become an ADR in EXT-01.1 | 2026-11-23 | — |
 | DEC-02 | Public repository with a proprietary licence | 2026-11-23 | [002](adr/002-public-repository.md) |
 | DEC-03 | Visual direction "G - Aurora" (lavender-to-mint gradient, glass cards, violet primary, Outfit), with AA contrast adjustments; dark mode proposal pending approval | 2026-11-23 | [006](adr/006-visual-direction-aurora.md) |
-| DEC-01 | Cloud Run (API and engines) and Supabase (Postgres) in São Paulo, free plans for staging and beta | 2026-11-23 | [007](adr/007-hosting-cloud-run-supabase.md) |
+| DEC-01 | Fly.io (API and engines) and Supabase (Postgres) in São Paulo; Cloud Run and Oracle were blocked because their Brazilian billing requires a CNPJ | 2026-11-23 | [008](adr/008-hosting-fly-io-supabase.md) |
