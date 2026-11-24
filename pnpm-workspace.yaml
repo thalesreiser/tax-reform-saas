@@ -30,6 +30,7 @@ catalog:
   happy-dom: 21.0.4
   husky: 9.1.7
   lint-staged: 17.6.1
+  lru-cache: 11.5.3
   nuxt: 4.6.4
   openapi-fetch: 0.17.0
   openapi-types: 12.1.3

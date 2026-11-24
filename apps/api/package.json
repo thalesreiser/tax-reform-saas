@@ -16,10 +16,13 @@
   "dependencies": {
     "@fastify/rate-limit": "catalog:",
     "@fastify/swagger": "catalog:",
+    "@trs/engine-client": "workspace:*",
+    "@trs/tax-legacy": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "fastify": "catalog:",
     "fastify-type-provider-zod": "catalog:",
+    "lru-cache": "catalog:",
     "openapi-types": "catalog:",
     "pg": "catalog:",
     "zod": "catalog:"

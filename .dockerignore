@@ -8,6 +8,10 @@
 !apps/*/package.json
 !packages/*/package.json
 !apps/api/
+# Workspace packages the API imports (built in the image).
+!packages/engine-client/
+!packages/tax-legacy/
+!packages/shared-types/
 
 **/node_modules
 **/dist

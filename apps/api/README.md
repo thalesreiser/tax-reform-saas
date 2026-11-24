@@ -221,3 +221,30 @@ auth route after it succeeds.
 - Retention period (kept forever for now) and what happens to a deleted user's events (LGPD,
   BE-05.1).
 - Whether accountants may read the log.
+
+## Reference data
+
+`GET /v1/reference/...` (RF-13) serves the reference tables of the official regime-regular engine
+through `@trs/engine-client`. Every route requires a signed-in office session for now (`requireOffice`;
+API keys come with BE-03.1 as a second entry in the plugin's `authenticate` list).
+
+| Route                         | Engine source                                          |
+| ----------------------------- | ------------------------------------------------------ |
+| `/cst`                        | CSTs with their cClassTrib (`situacoes-tributarias`)   |
+| `/class-trib/:code`           | One cClassTrib                                         |
+| `/legal-bases`                | Legal basis of each CST/cClassTrib                     |
+| `/ncm`, `/nbs`                | Search (`q`: code prefix or words), `page`, `pageSize` |
+| `/ncm/:code`, `/nbs/:code`    | One NCM / NBS                                          |
+| `/rates/union`                | CBS reference rate                                     |
+| `/rates/states/:code`         | IBS state rate (IBGE UF code)                          |
+| `/rates/municipalities/:code` | IBS municipal rate (IBGE code)                         |
+
+- Every route takes `date` (YYYY-MM-DD, default today in Brasília) and answers
+  `{ engine: { name, version }, dataVersion: { version, date }, validOn, data }`; decimals are text.
+- **Cache.** In-process LRU (`lru-cache`) keyed by engine version, endpoint and normalised parameters,
+  for `REFERENCE_CACHE_TTL_SECONDS` (default 6 h); the engine version itself is re-read every 5 min.
+  Concurrent misses share one engine call; failures are not cached. Answers carry
+  `Cache-Control: private, max-age=<ttl>` and an `ETag`; a matching `If-None-Match` gets 304.
+- **Errors.** No `ENGINE_REGIME_REGULAR_URL`: 503. Engine timeout (`ENGINE_TIMEOUT_MS`, default 30 s
+  for a Flycast cold start): 504. Engine 404: 404. Other failures: 502. Details are generic; the
+  engine body is never returned or logged, and the request log shows the route pattern, not the codes.
