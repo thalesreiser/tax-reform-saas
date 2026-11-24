@@ -1,0 +1,193 @@
+name: Deploy staging
+
+# Deploys develop to Fly.io staging after CI passed on it (EST-03.2, ADR 008): migrations on
+# Supabase, the official engines (private, Flycast) and the API. See deploy/README.md.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [develop]
+  workflow_dispatch:
+
+# One deploy at a time; a newer one waits instead of cancelling a deploy halfway.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # The commit CI tested (workflow_run) or the dispatched one.
+  DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+  FLYCTL_VERSION: 0.5.16
+
+jobs:
+  migrate:
+    name: Migrate the Supabase database
+    if: &deployable >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'develop') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter "@trs/api..."
+      - run: pnpm --filter @trs/api build
+      # Session pooler (IPv4) as the owner role. The URL only lives in the environment; the
+      # migration CLI never prints it.
+      - name: Apply pending migrations
+        env:
+          DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+        run: pnpm --filter @trs/api db:migrate
+
+  engines:
+    name: Deploy engine ${{ matrix.engine.name }}
+    # Independent of the migrations: the engines have their own database file.
+    if: *deployable
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        engine:
+          - name: regime-regular
+            app: trs-engine-rr
+            config: deploy/fly/engine-rr.toml
+            tag_var: REGIME_REGULAR_TAG
+            token: FLY_TOKEN_ENGINE_RR
+          - name: simples-nacional
+            app: trs-engine-sn
+            config: deploy/fly/engine-sn.toml
+            tag_var: SIMPLES_NACIONAL_TAG
+            token: FLY_TOKEN_ENGINE_SN
+    env:
+      APP: ${{ matrix.engine.app }}
+      FLY_API_TOKEN: ${{ secrets[matrix.engine.token] }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+          persist-credentials: false
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+        with:
+          version: ${{ env.FLYCTL_VERSION }}
+
+      # The image tested and published by engine-images.yml for the tag pinned in versions.env.
+      - name: Copy the tested image to Fly's registry
+        id: image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENGINE: ${{ matrix.engine.name }}
+          TAG_VAR: ${{ matrix.engine.tag_var }}
+        run: |
+          tag="$(grep -E "^${TAG_VAR}=" engines/versions.env | cut -d= -f2)"
+          test -n "$tag"
+          source_image="ghcr.io/thalesreiser/trs-engine-${ENGINE}:${tag}"
+          target_image="registry.fly.io/${APP}:${tag}"
+          echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          docker pull --platform linux/amd64 "$source_image"
+          docker logout ghcr.io
+          flyctl auth docker
+          docker tag "$source_image" "$target_image"
+          docker push "$target_image"
+          echo "ref=$target_image" >> "$GITHUB_OUTPUT"
+
+      # Private only: a Flycast address, never a public one. Fails before deploying if a public
+      # address exists, so a misconfiguration cannot expose Swagger or the engine.
+      - name: Check the addresses (Flycast only, no public IP)
+        run: |
+          ips="$(flyctl ips list --app "$APP" --json)"
+          public="$(jq -r '[.[] | select(.Type != "private_v6")] | length' <<< "$ips")"
+          if [ "$public" != "0" ]; then
+            echo "::error::$APP has a public IP; release it with fly ips release before deploying"
+            exit 1
+          fi
+          if [ "$(jq -r 'length' <<< "$ips")" = "0" ]; then
+            flyctl ips allocate-v6 --private --app "$APP"
+          fi
+
+      - name: Deploy
+        env:
+          CONFIG: ${{ matrix.engine.config }}
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: |
+          flyctl deploy --config "$CONFIG" --app "$APP" --image "$IMAGE" \
+            --no-public-ips --ha=false --strategy rolling --wait-timeout 5m0s
+          echo "- \`$APP\`: \`$IMAGE\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check again that no public IP was allocated
+        run: |
+          public="$(flyctl ips list --app "$APP" --json | jq -r '[.[] | select(.Type != "private_v6")] | length')"
+          test "$public" = "0"
+
+  # Skipped until DATABASE_URL is set on the Fly app and the repository variable
+  # API_DATABASE_READY is "true" (deploy/README.md): without it the API would not start.
+  api:
+    name: Deploy the API
+    needs: migrate
+    if: vars.API_DATABASE_READY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    env:
+      APP: trs-tax-api
+      FLY_API_TOKEN: ${{ secrets.FLY_TOKEN_API }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+          persist-credentials: false
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+        with:
+          version: ${{ env.FLYCTL_VERSION }}
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Log in to Fly's registry
+        run: flyctl auth docker
+
+      # Same Dockerfile as image.yml (built, smoke-tested and scanned there on every change).
+      - name: Build and push the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          platforms: linux/amd64
+          tags: registry.fly.io/${{ env.APP }}:${{ env.DEPLOY_SHA }}
+          push: true
+          provenance: false
+          cache-from: type=gha,scope=api-image
+
+      - name: Deploy
+        run: |
+          image="registry.fly.io/$APP:$DEPLOY_SHA"
+          flyctl deploy --config deploy/fly/api.toml --app "$APP" --image "$image" \
+            --env "APP_VERSION=$DEPLOY_SHA" --ha=false --strategy rolling --wait-timeout 5m0s
+          echo "- \`$APP\`: \`$image\`" >> "$GITHUB_STEP_SUMMARY"
+
+      # The machine may be stopped (auto stop): allow for a cold start.
+      - name: Smoke test GET /health
+        run: |
+          for _ in $(seq 1 18); do
+            if curl --silent --fail --max-time 10 --output health.json https://trs-tax-api.fly.dev/health; then
+              cat health.json
+              jq --exit-status --arg v "$DEPLOY_SHA" '.status == "ok" and .version == $v' health.json
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::https://trs-tax-api.fly.dev/health did not answer within 90 s"
+          exit 1
