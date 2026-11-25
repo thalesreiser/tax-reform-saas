@@ -352,3 +352,34 @@ interface (`src/clients/lookup.ts`), so replacing it is one module.
   generic; the provider's body is never returned or logged.
 - BrasilAPI may not know alphanumeric CNPJs yet: those lookups answer 404/502 until it does, and the
   client can still be created by hand.
+
+## Fiscal profile
+
+One profile per client (RF-03, BE-02.3): `client_fiscal_profiles` plus its lines in
+`client_sales_mix` and `client_creditable_purchases`, all office-scoped with row-level security
+(0009). Deleting a client deletes its profile.
+
+| Route                                             | What it does                                     |
+| ------------------------------------------------- | ------------------------------------------------ |
+| `GET /v1/clients/:id/fiscal-profile`              | The profile; a version-0 draft when none exists  |
+| `PUT /v1/clients/:id/fiscal-profile`              | Replaces the whole profile (`If-Match` required) |
+| `GET /v1/clients/:id/fiscal-profile/completeness` | Missing or invalid fields per simulation need    |
+
+- **Draft defaults:** the CNAEs, UF and IBGE municipality come from the CNPJ registry fields of the
+  client. The registry's MEI/Simples flag is returned as `regimeHint` only: the regime is the
+  accountant's, recorded with `regimeConfirmed: true` (who and when; changing the regime clears it).
+- **Concurrency:** the ETag is the version. `If-Match: "0"` creates the profile; a missing header is
+  428, a stale one 412. Saving an unchanged profile does not bump the version.
+- **Decimals:** amounts and percents are decimal strings (`"1200000.00"`), never JSON numbers,
+  stored as `numeric(15, 2)` and `numeric(7, 4)`. Mix lines use either `sharePercent` or `amount`;
+  shares must total 100 within 0.01 (exact decimal sum).
+- **Codes:** format checks only (NCM 8 digits, NBS 9, CNAE 7, IBGE 7 and matching the UF, cClassTrib
+  6, CST 3; dots and dashes are stripped). Completeness reports `referenceCheck: "not_verified"`
+  until they are checked against the engine's reference data.
+- **Completeness:** `profileCompleteness()` (src/clients/fiscal-profile.ts) is pure and is reused by
+  the simulations (BE-02.4). Needs: `currentTaxes` (confirmed regime, CNAE, UF, municipality,
+  revenue, a valid mix), `reform` (UF, municipality, NCM or NBS and cClassTrib per line), `simples`
+  (RBT12 and annex) and `factorR` (payroll and RBT12). Which need applies to a client is a tax rule
+  of the simulation, not of the profile.
+- **Audit:** `client.fiscal_profile_updated` (changed field names and line counts) and
+  `client.regime_confirmed` (the regime). Values are never logged.
