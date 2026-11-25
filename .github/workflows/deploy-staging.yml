@@ -43,7 +43,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile --filter "@trs/api..."
-      - run: pnpm --filter @trs/api build
+      # "@trs/api..." builds the workspace packages the API imports (engine-client, tax-legacy) first.
+      - run: pnpm --filter "@trs/api..." build
       # Session pooler (IPv4) as the owner role. The URL only lives in the environment; the
       # migration CLI never prints it.
       - name: Apply pending migrations
