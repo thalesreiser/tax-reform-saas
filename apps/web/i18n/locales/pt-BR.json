@@ -298,5 +298,112 @@
       "submit": "Excluir cliente",
       "done": "{name} foi excluído."
     }
+  },
+  "office": {
+    "title": "Escritório",
+    "description": "Dados, marca e equipe usados nos relatórios e no acesso ao sistema.",
+    "sectionsLabel": "Seções da página",
+    "sections": {
+      "perfil": "Perfil do escritório",
+      "marca": "Marca",
+      "equipe": "Equipe",
+      "chaves": "Chaves de API"
+    },
+    "ownerOnly": "Somente proprietários podem alterar estas informações.",
+    "apiKeysSoon": "Em breve você poderá criar chaves para integrar o seu ERP ou sistema à API.",
+    "profile": {
+      "name": "Nome do escritório",
+      "cnpj": "CNPJ do escritório",
+      "cnpjHelp": "Opcional. Números ou letras e números (CNPJ alfanumérico).",
+      "email": "E-mail de contato",
+      "phone": "Telefone de contato",
+      "save": "Salvar perfil",
+      "saved": "Perfil salvo."
+    },
+    "brand": {
+      "colorTitle": "Cor da marca",
+      "picker": "Escolher cor",
+      "hex": "Código hexadecimal",
+      "hexInvalid": "Use o formato #RRGGBB, por exemplo #6D4AFF.",
+      "noColor": "Nenhuma cor definida.",
+      "contrastOk": "Contraste com branco: {ratio}. Atende ao mínimo de acessibilidade (4,5:1).",
+      "contrastLow": "Contraste com branco: {ratio}, abaixo do mínimo de acessibilidade (4,5:1). Textos nesta cor ou sobre ela podem ficar difíceis de ler. Você pode salvar mesmo assim.",
+      "saveColor": "Salvar cor",
+      "clearColor": "Remover cor",
+      "colorSaved": "Cor da marca salva.",
+      "colorCleared": "Cor da marca removida.",
+      "preview": "Prévia do cabeçalho de relatório",
+      "sampleReport": "Relatório de impacto da reforma (exemplo)",
+      "sampleButton": "Ver simulação",
+      "logoTitle": "Logotipo",
+      "logoAlt": "Logotipo de {name}",
+      "noLogo": "Nenhum logotipo enviado.",
+      "chooseLogo": "Enviar logotipo",
+      "replaceLogo": "Trocar logotipo",
+      "removeLogo": "Remover logotipo",
+      "logoHelp": "PNG, JPEG ou WebP, até 200 KB, entre 16 e 2048 pixels por lado. SVG não é aceito.",
+      "uploading": "Enviando o logotipo…",
+      "logoSaved": "Logotipo salvo.",
+      "logoRemoved": "Logotipo removido.",
+      "logoErrors": {
+        "svg": "Arquivos SVG não são aceitos. Envie PNG, JPEG ou WebP.",
+        "type": "Formato não aceito. Envie PNG, JPEG ou WebP.",
+        "size": "O arquivo tem mais de 200 KB. Reduza a imagem e tente novamente.",
+        "dimensions": "A imagem deve ter entre 16 e 2048 pixels por lado.",
+        "unreadable": "Não foi possível ler esta imagem. Confira o arquivo e tente novamente."
+      }
+    },
+    "team": {
+      "membersLabel": "Membros do escritório",
+      "you": "(você)",
+      "joined": "Entrou em {date}",
+      "roleOf": "Papel de {name}",
+      "roleChanged": "{name} agora é {role}.",
+      "removeMember": "Remover {name}",
+      "remove": {
+        "title": "Remover membro",
+        "confirm": "Remover {name} do escritório?",
+        "effect": "A pessoa perde o acesso imediatamente. Você pode convidá-la de novo depois.",
+        "cancel": "Cancelar",
+        "submit": "Remover",
+        "done": "{name} foi removido do escritório."
+      },
+      "invite": {
+        "title": "Convidar pessoa",
+        "email": "E-mail",
+        "role": "Papel",
+        "submit": "Enviar convite",
+        "sent": "Convite enviado para {email}."
+      },
+      "invitations": {
+        "title": "Convites pendentes",
+        "empty": "Nenhum convite pendente.",
+        "expires": "expira em {date}",
+        "resend": "Reenviar",
+        "cancel": "Cancelar convite",
+        "resent": "Convite reenviado para {email}.",
+        "cancelled": "Convite para {email} cancelado."
+      }
+    },
+    "validation": {
+      "nameRequired": "Informe o nome do escritório.",
+      "tooLong": "Use no máximo {max} caracteres.",
+      "cnpjInvalid": "CNPJ inválido. Confira os caracteres digitados.",
+      "email": "Informe um e-mail válido.",
+      "emailRequired": "Informe o e-mail.",
+      "phone": "Informe um telefone válido, com DDD."
+    },
+    "errors": {
+      "network": "Não foi possível conectar. Verifique sua internet e tente novamente.",
+      "rateLimited": "Muitas tentativas em pouco tempo. Aguarde um minuto e tente novamente.",
+      "forbidden": "Somente proprietários do escritório podem fazer isso.",
+      "lastOwner": "O escritório precisa de pelo menos um proprietário. Promova outra pessoa a proprietário antes de remover ou rebaixar esta.",
+      "alreadyMember": "Esta pessoa já faz parte do escritório.",
+      "alreadyInvited": "Já existe um convite pendente para este e-mail.",
+      "invitationGone": "Este convite não está mais pendente. Atualize a página.",
+      "memberGone": "Este membro não faz mais parte do escritório. Atualize a página.",
+      "invalid": "Confira os dados informados e tente novamente.",
+      "generic": "Algo deu errado. Tente novamente em instantes."
+    }
   }
 }

@@ -3,28 +3,29 @@
 Nuxt 4 web app (server-side rendered): the accountant dashboard, the simulator, the business owner
 share view and the public landing pages arrive here task by task (FE tracks).
 
-| Path                      | What it is                                                      |
-| ------------------------- | --------------------------------------------------------------- |
-| `app/app.vue`             | Root component: Nuxt UI `UApp` wrapping the layout and pages    |
-| `app/app.config.ts`       | App config: placeholder product name (`appName`), Nuxt UI theme |
-| `app/assets/css/main.css` | Aurora theme: palettes, semantic tokens, utilities              |
-| `app/theme/aurora.ts`     | Nuxt UI semantic colour -> palette name                         |
-| `app/components/`         | Shared components (wordmark, account menu, auth card and panel) |
-| `app/composables/`        | `useAuth` (API auth calls), `useAuthMessage`, `useOffice`       |
-| `app/middleware/auth.ts`  | Route middleware: anonymous users go to `/entrar`               |
-| `app/utils/auth.ts`       | Form schemas, API error -> message key, safe redirects          |
-| `app/layouts/default.vue` | Base shell: skip link, header, main landmark, footer            |
-| `app/layouts/app.vue`     | Signed-in shell: header, sidebar navigation / drawer, main      |
-| `app/utils/dashboard.ts`  | Dashboard view model, navigation items, impact formatting       |
-| `app/utils/cnpj.ts`       | CNPJ mask and validation (web copy of the API rules)            |
-| `app/utils/clients.ts`    | Client shapes, form schema, client/lookup error -> message key  |
-| `app/pages/`              | File-based routes (`index.vue` is the placeholder home page)    |
-| `app/error.vue`           | Error page (404 and unexpected errors), rendered in the layout  |
-| `i18n/locales/pt-BR.json` | Every user-facing string                                        |
-| `test/e2e/`               | End-to-end tests against the built, server-rendered app         |
-| `test/unit/`              | Unit tests (contrast, auth validation and error messages)       |
-| `test/nuxt/`              | Component tests in the Nuxt runtime (happy-dom) with fixtures   |
-| `.env.example`            | Runtime variables (`NUXT_PUBLIC_API_URL`, `PORT`)               |
+| Path                      | What it is                                                       |
+| ------------------------- | ---------------------------------------------------------------- |
+| `app/app.vue`             | Root component: Nuxt UI `UApp` wrapping the layout and pages     |
+| `app/app.config.ts`       | App config: placeholder product name (`appName`), Nuxt UI theme  |
+| `app/assets/css/main.css` | Aurora theme: palettes, semantic tokens, utilities               |
+| `app/theme/aurora.ts`     | Nuxt UI semantic colour -> palette name                          |
+| `app/components/`         | Shared components (wordmark, account menu, auth card and panel)  |
+| `app/composables/`        | `useAuth` (API auth calls), `useAuthMessage`, `useOffice`        |
+| `app/middleware/auth.ts`  | Route middleware: anonymous users go to `/entrar`                |
+| `app/utils/auth.ts`       | Form schemas, API error -> message key, safe redirects           |
+| `app/layouts/default.vue` | Base shell: skip link, header, main landmark, footer             |
+| `app/layouts/app.vue`     | Signed-in shell: header, sidebar navigation / drawer, main       |
+| `app/utils/dashboard.ts`  | Dashboard view model, navigation items, impact formatting        |
+| `app/utils/cnpj.ts`       | CNPJ mask and validation (web copy of the API rules)             |
+| `app/utils/clients.ts`    | Client shapes, form schema, client/lookup error -> message key   |
+| `app/utils/office.ts`     | Office shapes, brand contrast, logo checks, error -> message key |
+| `app/pages/`              | File-based routes (`index.vue` is the placeholder home page)     |
+| `app/error.vue`           | Error page (404 and unexpected errors), rendered in the layout   |
+| `i18n/locales/pt-BR.json` | Every user-facing string                                         |
+| `test/e2e/`               | End-to-end tests against the built, server-rendered app          |
+| `test/unit/`              | Unit tests (contrast, auth validation and error messages)        |
+| `test/nuxt/`              | Component tests in the Nuxt runtime (happy-dom) with fixtures    |
+| `.env.example`            | Runtime variables (`NUXT_PUBLIC_API_URL`, `PORT`)                |
 
 ## Conventions
 
@@ -148,3 +149,28 @@ header, so pages and the `auth` middleware know the session before hydration. Co
 - **Tests:** `test/nuxt/clients.test.ts` drives the form and the dialog with `useClients` mocked
   (autofill, manual fallback, 429, 409, edit, delete); `test/e2e/auth.test.ts` renders the pages
   against the mock API (list, search, empty state, form, edit, not found).
+
+## Office settings (FE-02.4)
+
+`/escritorio` (navigation "Escritório") has four sections with in-page anchors: profile, brand,
+team and API keys ("Em breve" until BE-03.1). Data comes from `useOfficeSettings()` (`/v1/office`,
+`/v1/office/logo`, `/v1/office/members`, `/v1/office/invitations`; API README "Office"). Copy is
+provisional.
+
+- **Roles:** owners edit everything. Accountants see the profile and brand read-only and the members
+  list only; invitations are neither fetched nor shown to them.
+- **Profile:** name, office CNPJ (`app/utils/cnpj.ts`), contact e-mail and phone; empty optional
+  fields are sent as `null`. After a save focus moves to the success notice.
+- **Brand:** colour picker and hex field with a live preview of a report header and button. The
+  contrast is computed while typing with a copy of the API formula (`app/utils/office.ts`); after a
+  save the API's `brandContrast` is shown. Below 4.5:1 the page warns but never blocks.
+- **Logo:** before uploading, the file is checked for type (PNG, JPEG, WebP; SVG gets its own
+  message), size (200 KB) and dimensions (16 to 2048 px, decoded with `createImageBitmap`). The
+  API checks the bytes again; 413, 415 and 422 are shown as messages. The image is served by the API
+  and the ETag goes in the query to refresh it after a change.
+- **Team:** role change and removal (in-page dialog; 409 explains the last-owner rule), invitation
+  through better-auth (`organization/invite-member`), and cancel/resend of pending invitations.
+  Save, upload and team results are announced in `aria-live` regions.
+- **Tests:** `test/unit/office.test.ts` (hex, contrast, logo checks, error mapping, schemas),
+  `test/nuxt/office.test.ts` (owner vs accountant, logo checks before upload, remove dialog and 409),
+  `test/e2e/auth.test.ts` (pages against the mock API for both roles).
