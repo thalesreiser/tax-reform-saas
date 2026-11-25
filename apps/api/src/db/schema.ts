@@ -6,6 +6,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -133,6 +134,129 @@ export const clients = pgTable(
   ],
 )
 
+export const FISCAL_REGIMES = ["simples_nacional", "lucro_presumido", "lucro_real", "mei"] as const
+export type FiscalRegime = (typeof FISCAL_REGIMES)[number]
+export const SIMPLES_ANNEXES = ["I", "II", "III", "IV", "V"] as const
+export const OPERATION_TYPES = ["goods", "services"] as const
+export const DESTINATIONS = ["intrastate", "interstate"] as const
+/** Input grouping only; which purchases give credit is decided by the simulation (MOT-03.2). */
+export const PURCHASE_CATEGORIES = [
+  "goods_for_resale",
+  "inputs",
+  "services",
+  "energy",
+  "rent",
+  "freight",
+  "fixed_assets",
+  "other",
+] as const
+
+/** R$ amounts: numeric(15, 2), read and written as decimal strings (never JS numbers). */
+const amount = (name: string) => numeric(name, { precision: 15, scale: 2 })
+const inList = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`).join(", "))
+
+/**
+ * Fiscal profile of a client (RF-03, BE-02.3), 1:1 with `clients`. Every field may be empty while
+ * the accountant fills it in; `profileCompleteness()` says what a simulation still needs. The
+ * regime is the accountant's (`confirmed_by`/`confirmed_at`), not the registry's hint.
+ * `version` is the optimistic-concurrency token (ETag / If-Match).
+ */
+export const clientFiscalProfiles = pgTable(
+  "client_fiscal_profiles",
+  {
+    clientId: uuid("client_id")
+      .primaryKey()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => offices.id),
+    regime: text("regime"),
+    simplesAnnex: text("simples_annex"),
+    /** Gross revenue of the last 12 months for the Simples bracket. */
+    rbt12: amount("rbt12"),
+    mainCnae: text("main_cnae"),
+    secondaryCnaes: text("secondary_cnaes")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    uf: char("uf", { length: 2 }),
+    /** IBGE municipality code, 7 digits. */
+    municipalityCode: char("municipality_code", { length: 7 }),
+    revenue12m: amount("revenue_12m"),
+    /** Payroll of the last 12 months (factor R), optional. */
+    payroll12m: amount("payroll_12m"),
+    confirmedBy: uuid("confirmed_by"),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    version: integer("version").notNull().default(1),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("client_fiscal_profiles_regime_check", sql`${t.regime} in (${inList(FISCAL_REGIMES)})`),
+    check(
+      "client_fiscal_profiles_municipality_code_check",
+      sql`${t.municipalityCode} ~ '^[0-9]{7}$'`,
+    ),
+  ],
+)
+
+/** One line of the sales mix: an NCM (goods) or NBS (services), as a revenue share or amount. */
+export const clientSalesMix = pgTable(
+  "client_sales_mix",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => offices.id),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clientFiscalProfiles.clientId, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    operationType: text("operation_type").notNull(),
+    ncm: text("ncm"),
+    nbs: text("nbs"),
+    description: text("description"),
+    /** Percent of revenue, 4 places; or `amount`, never both. */
+    sharePercent: numeric("share_percent", { precision: 7, scale: 4 }),
+    amount: amount("amount"),
+    cst: text("cst"),
+    cClassTrib: text("c_class_trib"),
+    destination: text("destination").notNull(),
+  },
+  (t) => [
+    index("client_sales_mix_client_id_idx").on(t.clientId),
+    check(
+      "client_sales_mix_operation_type_check",
+      sql`${t.operationType} in (${inList(OPERATION_TYPES)})`,
+    ),
+    check("client_sales_mix_destination_check", sql`${t.destination} in (${inList(DESTINATIONS)})`),
+  ],
+)
+
+/** Purchases that may give credit, as an amount per category (last 12 months). */
+export const clientCreditablePurchases = pgTable(
+  "client_creditable_purchases",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => offices.id),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clientFiscalProfiles.clientId, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    category: text("category").notNull(),
+    description: text("description"),
+    amount: amount("amount").notNull(),
+  },
+  (t) => [
+    index("client_creditable_purchases_client_id_idx").on(t.clientId),
+    check(
+      "client_creditable_purchases_category_check",
+      sql`${t.category} in (${inList(PURCHASE_CATEGORIES)})`,
+    ),
+  ],
+)
+
 /**
  * Audited actions (RF-18). Adding one: append it here (`db:generate` writes `ALTER TYPE ... ADD
  * VALUE`) and give it a metadata schema in src/audit/events.ts.
@@ -151,6 +275,8 @@ export const AUDIT_ACTIONS = [
   "client.created",
   "client.updated",
   "client.deleted",
+  "client.fiscal_profile_updated",
+  "client.regime_confirmed",
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
 

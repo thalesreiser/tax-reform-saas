@@ -64,6 +64,13 @@
       "when": 1795458991459,
       "tag": "0008_office_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795458996459,
+      "tag": "0009_client_fiscal_profile",
+      "breakpoints": true
     }
   ]
 }

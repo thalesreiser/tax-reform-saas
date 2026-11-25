@@ -19,6 +19,7 @@ import { configOriginPolicy, isAllowedOrigin } from "./origins.js"
 import { errorHandler, problem, sendProblem } from "./problem.js"
 import { auditRoutes } from "./routes/audit.js"
 import { clientRoutes } from "./routes/clients.js"
+import { fiscalProfileRoutes } from "./routes/fiscal-profile.js"
 import { healthRoutes } from "./routes/health.js"
 import { memberRoutes } from "./routes/members.js"
 import { officeRoutes } from "./routes/office.js"
@@ -152,6 +153,8 @@ export async function buildApp(config: Config, deps: AppDeps = {}) {
         }),
       ),
   })
+
+  await app.register(fiscalProfileRoutes, { db, authenticate: [app.requireOffice] })
 
   app.get("/openapi.json", { schema: { hide: true } }, () => app.swagger())
 
